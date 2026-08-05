@@ -29,7 +29,7 @@
     "contains_non_public_inventory": false,
     "digest": "sha256:865cab610b0e1d37aaf947e93921666ff797e0a296e560134dad55b3c5cdb43b",
     "path": "owners/zed-pkg-test.json",
-    "repository": "ORESoftware/project-registry"
+    "repository": "approved-private-registry"
   },
   "relationships": [
     {

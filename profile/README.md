@@ -8,14 +8,14 @@ registry, concurrency, Nix, OCI, offline replay, and supply-chain safety.
 ## Planning and delivery
 
 - **Canonical Linear project:** [`github.com/zed-pkg-test`](https://linear.app/denman/project/githubcomzed-pkg-test-e0b5db761974)
-- **Intended GitHub Project title:** `zed-pkg-test-project`
+- **Canonical GitHub Project:** [`zed-pkg-test-project`](https://github.com/orgs/zed-pkg-test/projects/1) (project 1)
 - **Cross-system registry:** [`zed-pkg/zed-docs` doc 33](https://github.com/zed-pkg/zed-docs/blob/main/docs/33-github-linear-project-registry.md)
 - **Machine-readable mapping:** [`github-linear-project-registry.toml`](https://github.com/zed-pkg/zed-docs/blob/main/config/github-linear-project-registry.toml)
 - **Linear registry document:** [GitHub organization → Linear project → GitHub Project registry](https://linear.app/denman/document/github-organization-linear-project-github-project-registry-997be66819bb)
 
-The organization Project number and URL are intentionally not claimed until
-GitHub returns them. Organization Projects currently require additional Projects
-permission; do not infer `/projects/1`.
+Project 1 is the verified canonical organization board. Fleet reconciliation
+keeps its exact title, active state, governance issue, and routing documentation
+aligned with the Linear project.
 
 ## Portfolio
 
@@ -54,3 +54,13 @@ Pull requests run deterministic harness checks. Emulators, desktop matrices,
 live APIs/providers, databases, chaos, scale, and soaks are scheduled/manual.
 Missing upstreams or credentials are blocked readiness—not false passes or
 product regressions.
+
+<!-- org-project-routing:start -->
+## Planning and delivery routing
+
+- [GitHub Project: zed-pkg-test-project](https://github.com/orgs/zed-pkg-test/projects/1)
+- [Linear planning project](https://linear.app/denman/project/githubcomzed-pkg-test-e0b5db761974)
+- [Detailed project-routing contract](../docs/PROJECTS.md)
+
+GitHub owns code and delivery evidence; Linear owns planning and dependencies. The linked organization Project provides the cross-repository execution view.
+<!-- org-project-routing:end -->

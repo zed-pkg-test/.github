@@ -1,0 +1,24 @@
+name: Zed clients polyglot SDK matrix
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '5 4 * * 2,5'
+  workflow_dispatch:
+  repository_dispatch:
+    types: [clients-updated]
+
+permissions:
+  contents: read
+
+jobs:
+  sdk-clients:
+    uses: zed-pkg-test/.github/.github/workflows/sdk-client-language-matrix.yml@ad6b6a3e53958d2d2571a45d711d0263bbcce985
+    with:
+      clients_repository: zed-pkg/zed-clients
+      clients_ref: main
+      clients_root: clients
+    secrets:
+      read_token: ${{ secrets.TEST_ORG_READ_TOKEN }}

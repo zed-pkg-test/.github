@@ -56,7 +56,7 @@ Missing upstreams or credentials are blocked readiness—not false passes or
 product regressions.
 
 <!-- org-project-routing:start -->
-## Planning and delivery routing
+## Planning and delivery
 
 - [GitHub Project: zed-pkg-test-project](https://github.com/orgs/zed-pkg-test/projects/1)
 - [Linear planning project](https://linear.app/denman/project/githubcomzed-pkg-test-e0b5db761974)

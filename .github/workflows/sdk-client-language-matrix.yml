@@ -120,7 +120,7 @@ jobs:
             paths: typescript/nodejs,typescript/node,typescript
             image: node:22
             command: >-
-              test -f package.json &&
+              test -f package.json;
               corepack enable >/dev/null 2>&1 || true;
               if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile && pnpm run typecheck --if-present && pnpm test --if-present && pnpm run build --if-present;
               elif [ -f yarn.lock ]; then yarn install --immutable && yarn run typecheck --if-present && yarn test --if-present && yarn run build --if-present;
@@ -129,7 +129,7 @@ jobs:
             paths: typescript/deno,deno
             image: denoland/deno:2
             command: >-
-              find . -name '*.ts' -o -name '*.tsx' | grep -q . &&
+              find . \( -name '*.ts' -o -name '*.tsx' \) | grep -q . &&
               find . \( -name '*.ts' -o -name '*.tsx' \) -print0 | xargs -0 deno check &&
               deno test -A
           - id: typescript-bun
@@ -242,4 +242,4 @@ jobs:
             --volume "$GITHUB_WORKSPACE:/workspace" \
             --workdir "/workspace/$SDK_ROOT" \
             "$SDK_IMAGE" \
-            -lc "$SDK_COMMAND"
+            -c "$SDK_COMMAND"

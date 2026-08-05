@@ -17,15 +17,118 @@ on:
         required: false
         default: clients
         type: string
+      interfaces_repository:
+        description: Optional sibling interfaces repository needed by local SDK builds
+        required: false
+        default: ''
+        type: string
+      interfaces_ref:
+        description: Interfaces repository branch, tag, or commit
+        required: false
+        default: main
+        type: string
+      interfaces_path:
+        description: Workspace-relative checkout path expected by local SDK dependencies
+        required: false
+        default: interfaces
+        type: string
+      interfaces_dependency:
+        description: Expected Zed dependency coordinate; defaults to interfaces_repository
+        required: false
+        default: ''
+        type: string
+      lib_repository:
+        description: Optional sibling library repository needed by local SDK builds
+        required: false
+        default: ''
+        type: string
+      lib_ref:
+        description: Library repository branch, tag, or commit
+        required: false
+        default: main
+        type: string
+      lib_path:
+        description: Workspace-relative checkout path expected by local SDK dependencies
+        required: false
+        default: lib
+        type: string
+      lib_dependency:
+        description: Expected Zed dependency coordinate; defaults to lib_repository
+        required: false
+        default: ''
+        type: string
     secrets:
       read_token:
-        description: Fine-grained token or GitHub App token with read access to a private upstream repository
+        description: Fine-grained token or GitHub App token with read access to private upstream repositories
         required: false
 
 permissions:
   contents: read
 
 jobs:
+  zed-package-contract:
+    name: Zed package dependency contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the clients package
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ inputs.clients_repository }}
+          ref: ${{ inputs.clients_ref }}
+          path: _contract
+          token: ${{ secrets.read_token != '' && secrets.read_token || github.token }}
+          persist-credentials: false
+          show-progress: false
+
+      - name: Validate the clients Zed manifest
+        shell: bash
+        env:
+          INTERFACES_REPOSITORY: ${{ inputs.interfaces_repository }}
+          INTERFACES_DEPENDENCY: ${{ inputs.interfaces_dependency }}
+          LIB_REPOSITORY: ${{ inputs.lib_repository }}
+          LIB_DEPENDENCY: ${{ inputs.lib_dependency }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import sys
+          import tomllib
+
+          manifest = pathlib.Path('_contract/.zpkg.toml')
+          if not manifest.is_file():
+              raise SystemExit('missing required root .zpkg.toml in clients repository')
+
+          with manifest.open('rb') as stream:
+              document = tomllib.load(stream)
+
+          package = document.get('package', {})
+          package_name = package.get('name')
+          if not isinstance(package_name, str) or not package_name.endswith('-clients'):
+              raise SystemExit(f"Zed package name must end in '-clients'; found {package_name!r}")
+
+          dependencies = document.get('dependencies', {})
+          if not isinstance(dependencies, dict):
+              raise SystemExit('[dependencies] must be a TOML table')
+
+          checks = (
+              ('interfaces', os.environ['INTERFACES_REPOSITORY'], os.environ['INTERFACES_DEPENDENCY']),
+              ('lib', os.environ['LIB_REPOSITORY'], os.environ['LIB_DEPENDENCY']),
+          )
+          for label, repository, explicit_coordinate in checks:
+              if not repository:
+                  continue
+              coordinate = explicit_coordinate or repository
+              if coordinate not in dependencies:
+                  raise SystemExit(
+                      f"missing required {label} Zed dependency {coordinate!r}; "
+                      f"declared dependencies: {sorted(dependencies)}"
+                  )
+
+          print(f"validated {package_name} with {len(dependencies)} Zed dependencies")
+          PY
+
   sdk-language:
     name: ${{ matrix.id }} consumer
     runs-on: ubuntu-24.04
@@ -36,7 +139,7 @@ jobs:
         include:
           - id: gleamlang
             paths: gleam,gleamlang
-            image: ghcr.io/gleam-lang/gleam:latest
+            image: ghcr.io/gleam-lang/gleam:v1.15.2-erlang-alpine
             command: >-
               test -f gleam.toml &&
               gleam deps download &&
@@ -120,11 +223,14 @@ jobs:
             paths: typescript/nodejs,typescript/node,typescript
             image: node:22
             command: >-
-              test -f package.json;
-              corepack enable >/dev/null 2>&1 || true;
-              if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile && pnpm run typecheck --if-present && pnpm test --if-present && pnpm run build --if-present;
-              elif [ -f yarn.lock ]; then yarn install --immutable && yarn run typecheck --if-present && yarn test --if-present && yarn run build --if-present;
-              else (npm ci || npm install) && npm run typecheck --if-present && npm test --if-present && npm run build --if-present; fi
+              test -f package.json &&
+              (corepack enable >/dev/null 2>&1 || true) &&
+              if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile;
+              elif [ -f yarn.lock ]; then yarn install --immutable;
+              else npm ci || npm install; fi &&
+              npm run typecheck --if-present &&
+              npm run build --if-present &&
+              npm run test --if-present
           - id: typescript-deno
             paths: typescript/deno,deno
             image: denoland/deno:2
@@ -148,8 +254,8 @@ jobs:
               test -f package.json &&
               (npm ci || npm install) &&
               npm run typecheck --if-present &&
-              npm run test:edge --if-present &&
-              npm run build --if-present
+              npm run build --if-present &&
+              npm run test:edge --if-present
           - id: kotlin
             paths: kotlin
             image: gradle:8-jdk21
@@ -160,7 +266,7 @@ jobs:
               else echo 'Kotlin SDK is missing its Gradle build contract' >&2; exit 1; fi
           - id: swift
             paths: swift
-            image: swift:6
+            image: swift:6.3.3-noble
             command: >-
               test -f Package.swift &&
               swift package resolve &&
@@ -189,6 +295,39 @@ jobs:
           persist-credentials: false
           show-progress: false
 
+      - name: Validate optional dependency checkout paths
+        shell: bash
+        env:
+          INTERFACES_REPOSITORY: ${{ inputs.interfaces_repository }}
+          INTERFACES_PATH: ${{ inputs.interfaces_path }}
+          LIB_REPOSITORY: ${{ inputs.lib_repository }}
+          LIB_PATH: ${{ inputs.lib_path }}
+        run: |
+          set -euo pipefail
+          validate_path() {
+            local label="$1"
+            local repository="$2"
+            local path="$3"
+            [[ -z "$repository" ]] && return 0
+            [[ "$path" =~ ^[A-Za-z0-9][A-Za-z0-9._/-]*$ ]] || {
+              echo "$label checkout path contains unsupported characters: $path" >&2
+              exit 1
+            }
+            [[ "$path" != /* && "$path" != _upstream && "$path" != _contract ]] || {
+              echo "$label checkout path is reserved or absolute: $path" >&2
+              exit 1
+            }
+            IFS='/' read -r -a parts <<< "$path"
+            for part in "${parts[@]}"; do
+              [[ "$part" != . && "$part" != .. && -n "$part" ]] || {
+                echo "$label checkout path contains an unsafe segment: $path" >&2
+                exit 1
+              }
+            done
+          }
+          validate_path interfaces "$INTERFACES_REPOSITORY" "$INTERFACES_PATH"
+          validate_path lib "$LIB_REPOSITORY" "$LIB_PATH"
+
       - name: Check out the upstream clients repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -198,8 +337,28 @@ jobs:
           token: ${{ secrets.read_token != '' && secrets.read_token || github.token }}
           persist-credentials: false
           show-progress: false
-          sparse-checkout: ${{ inputs.clients_root }}
-          sparse-checkout-cone-mode: true
+
+      - name: Check out the interfaces dependency
+        if: ${{ inputs.interfaces_repository != '' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ inputs.interfaces_repository }}
+          ref: ${{ inputs.interfaces_ref }}
+          path: ${{ inputs.interfaces_path }}
+          token: ${{ secrets.read_token != '' && secrets.read_token || github.token }}
+          persist-credentials: false
+          show-progress: false
+
+      - name: Check out the library dependency
+        if: ${{ inputs.lib_repository != '' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ inputs.lib_repository }}
+          ref: ${{ inputs.lib_ref }}
+          path: ${{ inputs.lib_path }}
+          token: ${{ secrets.read_token != '' && secrets.read_token || github.token }}
+          persist-credentials: false
+          show-progress: false
 
       - name: Resolve and enforce the language SDK directory
         id: sdk-root
@@ -242,4 +401,4 @@ jobs:
             --volume "$GITHUB_WORKSPACE:/workspace" \
             --workdir "/workspace/$SDK_ROOT" \
             "$SDK_IMAGE" \
-            -c "$SDK_COMMAND"
+            -c "set -eu; $SDK_COMMAND"

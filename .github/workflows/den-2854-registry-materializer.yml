@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 30
     env:
       SOURCE_REPOSITORY: zed-pkg/zed-interfaces
-      SOURCE_SHA: 50ff87b9693105ee6cd721c6c30b143c4b673372
+      SOURCE_SHA: 552f0f7d1b155fa46b8d08ab5d4ac61a101ad728
     steps:
       - name: Check out exact public source head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -38,6 +38,7 @@ jobs:
           test -f candidate/.github/den-2854-snapshot-reconcile.py
           test -f candidate/.github/den-2854-archive-manifest-endpoint.py
           test -f candidate/.github/den-2854-canonical-trust-hardening.py
+          test -f candidate/.github/den-2854-root-signature-export.py
 
       - name: Apply reviewed one-use transformations
         working-directory: candidate
@@ -47,6 +48,7 @@ jobs:
           python3 .github/den-2854-snapshot-reconcile.py
           python3 .github/den-2854-archive-manifest-endpoint.py
           python3 .github/den-2854-canonical-trust-hardening.py
+          python3 .github/den-2854-root-signature-export.py
 
       - name: Format, test, lint, and generate schemas
         working-directory: candidate

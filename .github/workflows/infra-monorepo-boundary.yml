@@ -1,0 +1,53 @@
+name: infra-monorepo-boundary
+
+on:
+  pull_request:
+    paths:
+      - REPOSITORY_BOUNDARIES.md
+      - scripts/check_infra_monorepo_boundary.py
+      - tests/test_infra_monorepo_boundary.py
+      - tests/fixtures/**
+      - .github/workflows/infra-monorepo-boundary.yml
+  push:
+    branches: [main]
+    paths:
+      - REPOSITORY_BOUNDARIES.md
+      - scripts/check_infra_monorepo_boundary.py
+      - tests/test_infra_monorepo_boundary.py
+      - tests/fixtures/**
+      - .github/workflows/infra-monorepo-boundary.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infra-monorepo-boundary-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Run unit and fixture tests
+        run: python3 -m unittest discover -s tests -p 'test_infra_monorepo_boundary.py' -v
+      - name: Verify clean fixture passes
+        run: >-
+          python3 scripts/check_infra_monorepo_boundary.py
+          tests/fixtures/clean/.gitmodules
+          --repository zed-pkg-test/fixture-monorepo
+      - name: Verify violating fixture is rejected
+        shell: bash
+        run: |
+          set +e
+          python3 scripts/check_infra_monorepo_boundary.py \
+            tests/fixtures/hyphen-infra/.gitmodules \
+            --repository zed-pkg-test/fixture-monorepo
+          status=$?
+          set -e
+          test "$status" -eq 2

@@ -1,209 +1,32 @@
 name: Rust exact-SHA verifier
 
 on:
-  workflow_call:
-    inputs:
-      repository:
-        description: GitHub repository in owner/name form
-        required: true
-        type: string
-      commit_sha:
-        description: Exact 40-character lowercase commit SHA
-        required: true
-        type: string
-      manifest_path:
-        description: Safe repository-relative Cargo manifest path
-        required: true
-        type: string
-      rust_toolchain:
-        description: Exact numeric Rust toolchain version
-        required: false
-        default: "1.85.1"
-        type: string
-    secrets:
-      checkout_token:
-        description: Optional read-only token for a private target repository
-        required: false
-  workflow_dispatch:
-    inputs:
-      repository:
-        description: GitHub repository in owner/name form
-        required: true
-        type: string
-      commit_sha:
-        description: Exact 40-character lowercase commit SHA
-        required: true
-        type: string
-      manifest_path:
-        description: Safe repository-relative Cargo manifest path
-        required: true
-        type: string
-      rust_toolchain:
-        description: Exact numeric Rust toolchain version
-        required: false
-        default: "1.85.1"
-        type: string
   pull_request:
     paths:
       - ".github/workflows/public-rust-exact-sha.yml"
-      - ".github/workflows/den-2854-registry-materializer.yml"
-      - "docs/public-rust-exact-sha-verifier.md"
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: den-2854-registered-materializer-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  verify:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    env:
-      TARGET_REPOSITORY: ${{ inputs.repository || 'zed-pkg-test/rust-lib' }}
-      TARGET_COMMIT_SHA: ${{ inputs.commit_sha || 'e2382ee42b253ec8741b1aa5d0ebb165bb888257' }}
-      TARGET_MANIFEST_PATH: ${{ inputs.manifest_path || 'Cargo.toml' }}
-      RUST_TOOLCHAIN: ${{ inputs.rust_toolchain || '1.85.1' }}
-    steps:
-      - name: Validate untrusted inputs
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import os
-          import pathlib
-          import re
-
-          repository = os.environ["TARGET_REPOSITORY"]
-          commit_sha = os.environ["TARGET_COMMIT_SHA"]
-          manifest_path = os.environ["TARGET_MANIFEST_PATH"]
-          rust_toolchain = os.environ["RUST_TOOLCHAIN"]
-
-          if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
-              raise SystemExit(f"invalid repository selector: {repository!r}")
-          if not re.fullmatch(r"[0-9a-f]{40}", commit_sha):
-              raise SystemExit("commit_sha must be exactly 40 lowercase hexadecimal characters")
-          if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", rust_toolchain):
-              raise SystemExit("rust_toolchain must be an exact numeric stable version")
-
-          manifest = pathlib.PurePosixPath(manifest_path)
-          if (
-              manifest.is_absolute()
-              or not manifest.parts
-              or any(part in {"", ".", ".."} for part in manifest.parts)
-              or not re.fullmatch(r"[A-Za-z0-9_./-]+", manifest_path)
-              or manifest.name != "Cargo.toml"
-          ):
-              raise SystemExit(f"unsafe Cargo manifest path: {manifest_path!r}")
-          PY
-
-      - name: Check out exact candidate
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: ${{ env.TARGET_REPOSITORY }}
-          ref: ${{ env.TARGET_COMMIT_SHA }}
-          path: candidate
-          fetch-depth: 1
-          persist-credentials: false
-          token: ${{ secrets.checkout_token || secrets.TEST_ORG_READ_TOKEN || github.token }}
-
-      - name: Verify checkout identity and manifest containment
-        shell: bash
-        run: |
-          set -euo pipefail
-          actual_sha="$(git -C candidate rev-parse HEAD)"
-          test "$actual_sha" = "$TARGET_COMMIT_SHA"
-          python3 - <<'PY'
-          import os
-          import pathlib
-
-          root = pathlib.Path("candidate").resolve(strict=True)
-          manifest = (root / os.environ["TARGET_MANIFEST_PATH"]).resolve(strict=True)
-          if not manifest.is_file() or not manifest.is_relative_to(root):
-              raise SystemExit("manifest is not a regular file contained by the checked-out repository")
-          PY
-
-      - name: Install pinned Rust quality toolchain
-        shell: bash
-        run: |
-          set -euo pipefail
-          rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal --component clippy
-          rustup default "$RUST_TOOLCHAIN"
-
-      - name: Record immutable environment evidence
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p evidence
-          {
-            printf 'repository=%s\n' "$TARGET_REPOSITORY"
-            printf 'requested_sha=%s\n' "$TARGET_COMMIT_SHA"
-            printf 'actual_sha=%s\n' "$(git -C candidate rev-parse HEAD)"
-            printf 'manifest_path=%s\n' "$TARGET_MANIFEST_PATH"
-            rustc --version --verbose
-            cargo --version --verbose
-          } > evidence/environment.txt
-
-      - name: Run exact-manifest tests
-        shell: bash
-        env:
-          CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
-        run: |
-          set -euo pipefail
-          cargo test \
-            --manifest-path "candidate/$TARGET_MANIFEST_PATH" \
-            --all-targets \
-            2>&1 | tee evidence/cargo-test.log
-
-      - name: Run exact-manifest Clippy
-        shell: bash
-        env:
-          CARGO_TARGET_DIR: ${{ runner.temp }}/cargo-target
-        run: |
-          set -euo pipefail
-          cargo clippy \
-            --manifest-path "candidate/$TARGET_MANIFEST_PATH" \
-            --all-targets \
-            -- \
-            -D warnings \
-            2>&1 | tee evidence/cargo-clippy.log
-
-      - name: Record candidate worktree state
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p evidence
-          if test -d candidate/.git; then
-            git -C candidate status --short > evidence/worktree-status.txt
-          else
-            printf 'checkout unavailable\n' > evidence/worktree-status.txt
-          fi
-
-      - name: Upload redacted verification evidence
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: rust-exact-sha-${{ env.TARGET_COMMIT_SHA }}
-          path: evidence/
-          retention-days: 7
-          if-no-files-found: error
-
   materialize-den-2854:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       SOURCE_REPOSITORY: zed-pkg/zed-interfaces
-      SOURCE_SHA: 773238bccb2dc255fd0b1420bbaa5e4a654c4963
+      SOURCE_SHA: 73e9070c86ff1dcf68134885d1b05be08a314839
     steps:
-      - name: Check out exact public registry source
+      - name: Check out exact public source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ env.SOURCE_REPOSITORY }}
           ref: ${{ env.SOURCE_SHA }}
-          path: registry
+          path: candidate
           fetch-depth: 1
           persist-credentials: false
 
@@ -211,12 +34,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C registry rev-parse HEAD)" = "$SOURCE_SHA"
-          test -f registry/.github/den-2854-snapshot-reconcile.py
-          test -f registry/.github/den-2854-archive-manifest-endpoint.py
+          test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
+          test -f candidate/.github/den-2854-snapshot-reconcile.py
+          test -f candidate/.github/den-2854-archive-manifest-endpoint.py
 
       - name: Apply, format, test, lint, and generate schemas
-        working-directory: registry
+        working-directory: candidate
         shell: bash
         run: |
           set -euo pipefail
@@ -235,27 +58,31 @@ jobs:
           set -euo pipefail
           evidence="$RUNNER_TEMP/den-2854-materialized"
           rm -rf "$evidence"
-          mkdir -p "$evidence/files/schemas" "$evidence/files/fixtures/registry-v1" \
-            "$evidence/files/src" "$evidence/files/examples" "$evidence/files/docs"
+          mkdir -p \
+            "$evidence/files/src" \
+            "$evidence/files/examples" \
+            "$evidence/files/docs" \
+            "$evidence/files/fixtures/registry-v1" \
+            "$evidence/files/schemas"
 
-          cp registry/src/registry_protocol_v1.rs "$evidence/files/src/"
-          cp registry/src/lib.rs "$evidence/files/src/"
-          cp registry/examples/generate_schemas.rs "$evidence/files/examples/"
-          cp registry/docs/registry-protocol-v1.md "$evidence/files/docs/"
-          cp registry/fixtures/registry-v1/discovery.json \
-            registry/fixtures/registry-v1/index-snapshot.json \
+          cp candidate/src/registry_protocol_v1.rs "$evidence/files/src/"
+          cp candidate/src/lib.rs "$evidence/files/src/"
+          cp candidate/examples/generate_schemas.rs "$evidence/files/examples/"
+          cp candidate/docs/registry-protocol-v1.md "$evidence/files/docs/"
+          cp candidate/fixtures/registry-v1/discovery.json \
+            candidate/fixtures/registry-v1/index-snapshot.json \
             "$evidence/files/fixtures/registry-v1/"
-          cp registry/schemas/registry-*-v1.json "$evidence/files/schemas/"
+          cp candidate/schemas/registry-*-v1.json "$evidence/files/schemas/"
 
-          git -C registry diff --stat > "$evidence/diff-stat.txt"
-          git -C registry diff --check > "$evidence/diff-check.txt"
-          git -C registry status --short > "$evidence/status.txt"
+          git -C candidate diff --stat > "$evidence/diff-stat.txt"
+          git -C candidate diff --check > "$evidence/diff-check.txt"
+          git -C candidate status --short > "$evidence/status.txt"
           printf 'source_repository=%s\nsource_sha=%s\nactual_sha=%s\n' \
-            "$SOURCE_REPOSITORY" "$SOURCE_SHA" "$(git -C registry rev-parse HEAD)" \
+            "$SOURCE_REPOSITORY" "$SOURCE_SHA" "$(git -C candidate rev-parse HEAD)" \
             > "$evidence/source.txt"
           tar -C "$evidence" -czf "$RUNNER_TEMP/den-2854-materialized.tar.gz" .
 
-      - name: Upload materialized registry protocol
+      - name: Upload materialized protocol
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: den-2854-materialized-${{ env.SOURCE_SHA }}

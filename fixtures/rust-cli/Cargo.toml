@@ -1,0 +1,9 @@
+[package]
+name = "portable-rust-cli"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "portable-rust-cli"
+path = "src/main.rs"

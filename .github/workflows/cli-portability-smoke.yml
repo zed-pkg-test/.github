@@ -1,0 +1,32 @@
+name: reusable CLI portability smoke
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/cli-portability-smoke.yml'
+      - 'fixtures/rust-cli/**'
+      - 'fixtures/node-cli/**'
+      - '.gitignore'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rust-cli:
+    uses: ORESoftware/.github/.github/workflows/reusable-cli-portability.yml@agent/cli-portability-reusable-workflow
+    with:
+      language: rust
+      working-directory: fixtures/rust-cli
+      rust-toolchain: stable
+      cargo-locked: true
+      run-smoke: true
+
+  node-cli:
+    uses: ORESoftware/.github/.github/workflows/reusable-cli-portability.yml@agent/cli-portability-reusable-workflow
+    with:
+      language: node
+      working-directory: fixtures/node-cli
+      node-version: '22'
+      node-package-manager: npm
+      run-smoke: true

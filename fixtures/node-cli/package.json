@@ -1,0 +1,19 @@
+{
+  "name": "portable-node-cli-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": {
+    "portable-node-cli": "./cli.js"
+  },
+  "scripts": {
+    "format:check": "node --check cli.js && node --check test/cli.test.js",
+    "lint": "node --check cli.js && node --check test/cli.test.js",
+    "test": "node --test",
+    "build": "node -e \"require('node:fs').accessSync('cli.js')\""
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

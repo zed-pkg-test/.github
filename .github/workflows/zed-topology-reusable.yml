@@ -1,0 +1,45 @@
+name: reusable zed dependency topology gate
+
+on:
+  workflow_call:
+  pull_request:
+    paths:
+      - '.github/workflows/zed-topology-reusable.yml'
+      - 'scripts/validate-zed-topology.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  topology:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository under test
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check out immutable topology validator
+        uses: actions/checkout@v4
+        with:
+          repository: zed-pkg-test/.github
+          ref: 698014a92107b361ee04efad9d64d6f5d04b7407
+          path: .topology-gate
+          persist-credentials: false
+
+      - name: Prove broken and valid fixtures
+        run: python3 .topology-gate/scripts/validate-zed-topology.py --self-test
+
+      - name: Validate package topology when present
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f .zpkg.toml ]]; then
+            echo 'No .zpkg.toml in repository under test; reusable gate self-test only.'
+            exit 0
+          fi
+          python3 .topology-gate/scripts/validate-zed-topology.py \
+            .zpkg.toml \
+            --repository "$GITHUB_REPOSITORY"

@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   go-cli:
-    uses: ORESoftware/.github/.github/workflows/reusable-go-cli-portability.yml@8090b7c2285f6b4107cd72a3066bf3ded3d347fe
+    uses: ORESoftware/.github/.github/workflows/reusable-go-cli-portability.yml@ac77dc43ccda86797bf7b41901125d799d1dff40
     with:
       working-directory: fixtures/go-cli
       main-package: .

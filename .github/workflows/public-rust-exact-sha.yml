@@ -46,6 +46,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/public-rust-exact-sha.yml"
+      - ".github/workflows/den-2854-registry-materializer.yml"
       - "docs/public-rust-exact-sha-verifier.md"
 
 permissions:
@@ -187,4 +188,77 @@ jobs:
           name: rust-exact-sha-${{ env.TARGET_COMMIT_SHA }}
           path: evidence/
           retention-days: 7
+          if-no-files-found: error
+
+  materialize-den-2854:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SOURCE_REPOSITORY: zed-pkg/zed-interfaces
+      SOURCE_SHA: 773238bccb2dc255fd0b1420bbaa5e4a654c4963
+    steps:
+      - name: Check out exact public registry source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.SOURCE_REPOSITORY }}
+          ref: ${{ env.SOURCE_SHA }}
+          path: registry
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify source identity and reviewed patchers
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C registry rev-parse HEAD)" = "$SOURCE_SHA"
+          test -f registry/.github/den-2854-snapshot-reconcile.py
+          test -f registry/.github/den-2854-archive-manifest-endpoint.py
+
+      - name: Apply, format, test, lint, and generate schemas
+        working-directory: registry
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/den-2854-snapshot-reconcile.py
+          python3 .github/den-2854-archive-manifest-endpoint.py
+          cargo fmt --all
+          cargo test --locked registry_protocol_v1
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo run --locked --example generate_schemas
+          cargo test --locked registry_protocol_v1
+          git diff --check
+
+      - name: Package exact materialized files and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/den-2854-materialized"
+          rm -rf "$evidence"
+          mkdir -p "$evidence/files/schemas" "$evidence/files/fixtures/registry-v1" \
+            "$evidence/files/src" "$evidence/files/examples" "$evidence/files/docs"
+
+          cp registry/src/registry_protocol_v1.rs "$evidence/files/src/"
+          cp registry/src/lib.rs "$evidence/files/src/"
+          cp registry/examples/generate_schemas.rs "$evidence/files/examples/"
+          cp registry/docs/registry-protocol-v1.md "$evidence/files/docs/"
+          cp registry/fixtures/registry-v1/discovery.json \
+            registry/fixtures/registry-v1/index-snapshot.json \
+            "$evidence/files/fixtures/registry-v1/"
+          cp registry/schemas/registry-*-v1.json "$evidence/files/schemas/"
+
+          git -C registry diff --stat > "$evidence/diff-stat.txt"
+          git -C registry diff --check > "$evidence/diff-check.txt"
+          git -C registry status --short > "$evidence/status.txt"
+          printf 'source_repository=%s\nsource_sha=%s\nactual_sha=%s\n' \
+            "$SOURCE_REPOSITORY" "$SOURCE_SHA" "$(git -C registry rev-parse HEAD)" \
+            > "$evidence/source.txt"
+          tar -C "$evidence" -czf "$RUNNER_TEMP/den-2854-materialized.tar.gz" .
+
+      - name: Upload materialized registry protocol
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: den-2854-materialized-${{ env.SOURCE_SHA }}
+          path: ${{ runner.temp }}/den-2854-materialized.tar.gz
+          retention-days: 2
           if-no-files-found: error

@@ -1,0 +1,7 @@
+{
+  "name": "Polyglot context and shutdown conformance",
+  "description": "Enforce the canonical Node, Go, Rust, Gleam, and Dart context/lifecycle contract in a test repository.",
+  "iconName": "shield-check",
+  "categories": ["Code quality", "Continuous integration", "Testing"],
+  "filePatterns": ["package.json$", "go.mod$", "Cargo.toml$", "gleam.toml$", "pubspec.yaml$"]
+}

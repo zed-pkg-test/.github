@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 30
     env:
       SOURCE_REPOSITORY: zed-pkg/zed-interfaces
-      SOURCE_SHA: 773238bccb2dc255fd0b1420bbaa5e4a654c4963
+      SOURCE_SHA: 73e9070c86ff1dcf68134885d1b05be08a314839
     steps:
       - name: Check out exact public source head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

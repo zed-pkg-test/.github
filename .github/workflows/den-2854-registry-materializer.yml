@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 30
     env:
       SOURCE_REPOSITORY: zed-pkg/zed-interfaces
-      SOURCE_SHA: 73e9070c86ff1dcf68134885d1b05be08a314839
+      SOURCE_SHA: 50ff87b9693105ee6cd721c6c30b143c4b673372
     steps:
       - name: Check out exact public source head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -37,6 +37,7 @@ jobs:
           test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
           test -f candidate/.github/den-2854-snapshot-reconcile.py
           test -f candidate/.github/den-2854-archive-manifest-endpoint.py
+          test -f candidate/.github/den-2854-canonical-trust-hardening.py
 
       - name: Apply reviewed one-use transformations
         working-directory: candidate
@@ -45,6 +46,7 @@ jobs:
           set -euo pipefail
           python3 .github/den-2854-snapshot-reconcile.py
           python3 .github/den-2854-archive-manifest-endpoint.py
+          python3 .github/den-2854-canonical-trust-hardening.py
 
       - name: Format, test, lint, and generate schemas
         working-directory: candidate
@@ -64,7 +66,8 @@ jobs:
           set -euo pipefail
           evidence="$RUNNER_TEMP/den-2854-materialized"
           rm -rf "$evidence"
-          mkdir -p "$evidence/files/schemas" "$evidence/files/fixtures/registry-v1" \
+          mkdir -p "$evidence/files/schemas" \
+            "$evidence/files/fixtures/registry-v1/snapshot/index/acme" \
             "$evidence/files/src" "$evidence/files/examples" "$evidence/files/docs"
 
           cp candidate/src/registry_protocol_v1.rs "$evidence/files/src/"
@@ -72,8 +75,12 @@ jobs:
           cp candidate/examples/generate_schemas.rs "$evidence/files/examples/"
           cp candidate/docs/registry-protocol-v1.md "$evidence/files/docs/"
           cp candidate/fixtures/registry-v1/discovery.json \
+            candidate/fixtures/registry-v1/index.ndjson \
             candidate/fixtures/registry-v1/index-snapshot.json \
+            candidate/fixtures/registry-v1/checkpoint.json \
             "$evidence/files/fixtures/registry-v1/"
+          cp candidate/fixtures/registry-v1/snapshot/index/acme/widget \
+            "$evidence/files/fixtures/registry-v1/snapshot/index/acme/"
           cp candidate/schemas/registry-*-v1.json "$evidence/files/schemas/"
 
           git -C candidate diff --stat > "$evidence/diff-stat.txt"

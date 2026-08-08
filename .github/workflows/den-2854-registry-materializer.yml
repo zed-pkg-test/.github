@@ -1,0 +1,93 @@
+name: DEN-2854 registry protocol materializer
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/den-2854-registry-materializer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: den-2854-registry-materializer-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SOURCE_REPOSITORY: zed-pkg/zed-interfaces
+      SOURCE_SHA: 773238bccb2dc255fd0b1420bbaa5e4a654c4963
+    steps:
+      - name: Check out exact public source head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ env.SOURCE_REPOSITORY }}
+          ref: ${{ env.SOURCE_SHA }}
+          path: candidate
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify immutable source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C candidate rev-parse HEAD)" = "$SOURCE_SHA"
+          test -f candidate/.github/den-2854-snapshot-reconcile.py
+          test -f candidate/.github/den-2854-archive-manifest-endpoint.py
+
+      - name: Apply reviewed one-use transformations
+        working-directory: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/den-2854-snapshot-reconcile.py
+          python3 .github/den-2854-archive-manifest-endpoint.py
+
+      - name: Format, test, lint, and generate schemas
+        working-directory: candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo fmt --all
+          cargo test --locked registry_protocol_v1
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo run --locked --example generate_schemas
+          cargo test --locked registry_protocol_v1
+          git diff --check
+
+      - name: Package exact materialized files and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/den-2854-materialized"
+          rm -rf "$evidence"
+          mkdir -p "$evidence/files/schemas" "$evidence/files/fixtures/registry-v1" \
+            "$evidence/files/src" "$evidence/files/examples" "$evidence/files/docs"
+
+          cp candidate/src/registry_protocol_v1.rs "$evidence/files/src/"
+          cp candidate/src/lib.rs "$evidence/files/src/"
+          cp candidate/examples/generate_schemas.rs "$evidence/files/examples/"
+          cp candidate/docs/registry-protocol-v1.md "$evidence/files/docs/"
+          cp candidate/fixtures/registry-v1/discovery.json \
+            candidate/fixtures/registry-v1/index-snapshot.json \
+            "$evidence/files/fixtures/registry-v1/"
+          cp candidate/schemas/registry-*-v1.json "$evidence/files/schemas/"
+
+          git -C candidate diff --stat > "$evidence/diff-stat.txt"
+          git -C candidate diff --check > "$evidence/diff-check.txt"
+          git -C candidate status --short > "$evidence/status.txt"
+          printf 'source_repository=%s\nsource_sha=%s\nactual_sha=%s\n' \
+            "$SOURCE_REPOSITORY" "$SOURCE_SHA" "$(git -C candidate rev-parse HEAD)" \
+            > "$evidence/source.txt"
+          tar -C "$evidence" -czf "$RUNNER_TEMP/den-2854-materialized.tar.gz" .
+
+      - name: Upload materialized protocol
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: den-2854-materialized-${{ env.SOURCE_SHA }}
+          path: ${{ runner.temp }}/den-2854-materialized.tar.gz
+          retention-days: 2
+          if-no-files-found: error

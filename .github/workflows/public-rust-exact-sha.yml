@@ -1,10 +1,10 @@
-name: public Rust exact-SHA verifier
+name: Rust exact-SHA verifier
 
 on:
   workflow_call:
     inputs:
       repository:
-        description: Public GitHub repository in owner/name form
+        description: GitHub repository in owner/name form
         required: true
         type: string
       commit_sha:
@@ -20,10 +20,14 @@ on:
         required: false
         default: "1.85.1"
         type: string
+    secrets:
+      checkout_token:
+        description: Optional read-only token for a private target repository
+        required: false
   workflow_dispatch:
     inputs:
       repository:
-        description: Public GitHub repository in owner/name form
+        description: GitHub repository in owner/name form
         required: true
         type: string
       commit_sha:
@@ -56,9 +60,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
-      TARGET_REPOSITORY: ${{ inputs.repository || 'ORESoftware/k8s-libs-and-shared-defs' }}
-      TARGET_COMMIT_SHA: ${{ inputs.commit_sha || '7f7f130c445101abfed2d40b66880631c614abc2' }}
-      TARGET_MANIFEST_PATH: ${{ inputs.manifest_path || 'ores-read-cache/Cargo.toml' }}
+      TARGET_REPOSITORY: ${{ inputs.repository || 'zed-pkg-test/rust-lib' }}
+      TARGET_COMMIT_SHA: ${{ inputs.commit_sha || 'e2382ee42b253ec8741b1aa5d0ebb165bb888257' }}
+      TARGET_MANIFEST_PATH: ${{ inputs.manifest_path || 'Cargo.toml' }}
       RUST_TOOLCHAIN: ${{ inputs.rust_toolchain || '1.85.1' }}
     steps:
       - name: Validate untrusted inputs
@@ -76,7 +80,7 @@ jobs:
           rust_toolchain = os.environ["RUST_TOOLCHAIN"]
 
           if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repository):
-              raise SystemExit(f"invalid public repository selector: {repository!r}")
+              raise SystemExit(f"invalid repository selector: {repository!r}")
           if not re.fullmatch(r"[0-9a-f]{40}", commit_sha):
               raise SystemExit("commit_sha must be exactly 40 lowercase hexadecimal characters")
           if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", rust_toolchain):
@@ -93,7 +97,7 @@ jobs:
               raise SystemExit(f"unsafe Cargo manifest path: {manifest_path!r}")
           PY
 
-      - name: Check out exact public candidate
+      - name: Check out exact candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ env.TARGET_REPOSITORY }}
@@ -101,6 +105,7 @@ jobs:
           path: candidate
           fetch-depth: 1
           persist-credentials: false
+          token: ${{ secrets.checkout_token || secrets.TEST_ORG_READ_TOKEN || github.token }}
 
       - name: Verify checkout identity and manifest containment
         shell: bash
@@ -169,13 +174,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p evidence
-          git -C candidate status --short > evidence/worktree-status.txt
+          if test -d candidate/.git; then
+            git -C candidate status --short > evidence/worktree-status.txt
+          else
+            printf 'checkout unavailable\n' > evidence/worktree-status.txt
+          fi
 
       - name: Upload redacted verification evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: public-rust-exact-sha-${{ env.TARGET_COMMIT_SHA }}
+          name: rust-exact-sha-${{ env.TARGET_COMMIT_SHA }}
           path: evidence/
           retention-days: 7
           if-no-files-found: error

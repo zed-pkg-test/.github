@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "issue": "DEN-957",
+  "updatedDate": "2026-08-08",
+  "followUpIssueUrl": "https://github.com/ORESoftware/mcp-rust-libs/issues/20",
+  "requirements": {
+    "organizationSuffix": "-test",
+    "repository": "mcp-contract-e2e",
+    "githubAppInstallation": true,
+    "sourcePinFullSha": true,
+    "pullRequestCredentials": false,
+    "credentialFreeSnapshots": true
+  },
+  "targets": [
+    {
+      "productionRepository": "benefactor-cc/benefactor-cc-mcp-server.rs",
+      "testOrganization": "benefactor-cc-test",
+      "expectedHttpStatus": 404
+    },
+    {
+      "productionRepository": "daedalus-fab/daedalus-fab-mcp-server.rs",
+      "testOrganization": "daedalus-fab-test",
+      "expectedHttpStatus": 404
+    },
+    {
+      "productionRepository": "athlet-o/athleto-mcp-server.rs",
+      "testOrganization": "athlet-o-test",
+      "expectedHttpStatus": 404
+    },
+    {
+      "productionRepository": "akrion-sim/akrion-mcp-server.rs",
+      "testOrganization": "akrion-sim-test",
+      "expectedHttpStatus": 404
+    }
+  ]
+}

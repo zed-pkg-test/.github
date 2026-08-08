@@ -1,0 +1,14 @@
+name: cross-organization reusable workflow probe
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/cross-org-reusable-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  existing-reusable-policy:
+    uses: ORESoftware/.github/.github/workflows/reusable-policy.yml@0b0f9eb5142c42239862e2d355709721428450cf

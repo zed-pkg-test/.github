@@ -3,8 +3,8 @@
 
 const HELP = 'portable-node-cli 1.0.0\n\nUsage: portable-node-cli [--help]\n';
 
-function run(arguments) {
-  if (arguments.length === 0 || ['--help', '-h'].includes(arguments[0])) {
+function run(argv) {
+  if (argv.length === 0 || ['--help', '-h'].includes(argv[0])) {
     return { code: 0, output: HELP };
   }
   return { code: 2, output: 'unsupported argument; use --help\n' };

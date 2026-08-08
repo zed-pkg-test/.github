@@ -5,6 +5,8 @@ import re
 import sys
 from pathlib import Path
 
+from workflow_policy import only_calls_reusable_workflows
+
 ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else '.').resolve()
 REQUIRED = [
     'README.md', 'profile/README.md', 'ORG_CONTEXT.md', 'agents.md', 'AGENTS.md',
@@ -37,9 +39,11 @@ SECRET_PATTERNS = [
     re.compile(r'(?i)authorization:\\s*bearer\\s+[A-Za-z0-9._-]{16,}'),
 ]
 
+
 def fail(message: str) -> None:
     print(f'ERROR: {message}', file=sys.stderr)
     raise SystemExit(1)
+
 
 missing = [path for path in REQUIRED if not (ROOT / path).is_file()]
 if missing:
@@ -71,10 +75,10 @@ for path in workflow_paths:
     text = path.read_text(encoding='utf-8')
     if 'permissions:' not in text:
         fail(f'workflow lacks explicit permissions: {path.relative_to(ROOT)}')
-    if 'timeout-minutes:' not in text:
+    if 'timeout-minutes:' not in text and not only_calls_reusable_workflows(text):
         fail(f'workflow lacks timeout: {path.relative_to(ROOT)}')
     for number, line in enumerate(text.splitlines(), 1):
-        match = re.search(r'^\\s*(?:-\\s+)?uses:\\s*([^\\s#]+)', line)
+        match = re.search(r'^\s*(?:-\s+)?uses:\s*([^\s#]+)', line)
         if not match:
             continue
         ref = match.group(1)
@@ -90,6 +94,7 @@ for path in workflow_paths:
         fail(f'checkout credentials persist in {path.relative_to(ROOT)}')
 
 import subprocess
+
 relationship_check = subprocess.run(
     [sys.executable, str(ROOT / 'scripts/validate_repository_relationships.py'), str(ROOT)],
     text=True, capture_output=True, check=False,

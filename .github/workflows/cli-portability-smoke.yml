@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   rust-cli:
-    uses: ORESoftware/.github/.github/workflows/reusable-cli-portability.yml@f91f2ddbd887dfe6b0497357bf4cb0540e3f8809
+    uses: ORESoftware/.github/.github/workflows/reusable-cli-portability.yml@055258041c8047ebef65cb8ba055eb4780cf448c
     with:
       language: rust
       working-directory: fixtures/rust-cli
@@ -23,7 +23,7 @@ jobs:
       run-smoke: true
 
   node-cli:
-    uses: ORESoftware/.github/.github/workflows/reusable-cli-portability.yml@f91f2ddbd887dfe6b0497357bf4cb0540e3f8809
+    uses: ORESoftware/.github/.github/workflows/reusable-cli-portability.yml@055258041c8047ebef65cb8ba055eb4780cf448c
     with:
       language: node
       working-directory: fixtures/node-cli

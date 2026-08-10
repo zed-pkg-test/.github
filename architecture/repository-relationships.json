@@ -1,0 +1,1310 @@
+{
+  "$schema": "./repository-relationships.schema.json",
+  "composition_policy": {
+    "dual_managed_invariant": "gitlink SHA must equal the source commit in the Zed lock entry",
+    "editable_source_composition": "git-submodules",
+    "package_and_artifact_resolution": "zed-pkg",
+    "production_deployment_resolution": "immutable OCI image digest or signed artifact",
+    "production_source_checkout": "forbidden as a runtime deployment mechanism"
+  },
+  "inventory_scope": "public-repositories-plus-role-contracts",
+  "observability_policy": {
+    "logs": "structured output with trace_id/span_id correlation",
+    "metrics": "Prometheus-compatible bounded-cardinality metrics",
+    "required_resource_attributes": [
+      "service.name",
+      "service.namespace",
+      "service.version",
+      "deployment.environment",
+      "vcs.ref.head.revision"
+    ],
+    "traces": "OpenTelemetry with W3C trace context"
+  },
+  "organization": "zed-pkg-test",
+  "privacy": {
+    "private_repository_count": 0,
+    "private_repository_names_published": false,
+    "public_repository_names_published": true,
+    "reason": "The public .github registry intentionally withholds private repository names and edges."
+  },
+  "registry_repository": "zed-pkg-test/.github",
+  "relationships": [
+    {
+      "from": "organization://zed-pkg-test",
+      "kind": "packaged_via",
+      "rationale": "Zed resolves artifacts while submodules compose editable source",
+      "source_basis": "platform-policy",
+      "status": "platform-default",
+      "to": "platform://zed-pkg"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/adapter-wiring-cleanup-e2e"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/api-contract-e2e"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/awkward-lib"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/concurrent-install-locking"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/constraint-solver-blackbox"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/csharp-app"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/dart-app"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/dart-lib"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/erlang-app"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/first-install-manifest"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/gleam-app"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/gleam-lib"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/go-app"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/go-lib"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/java-app"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/java-lib"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/kotlin-app"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/manager-interop-e2e"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/multiversion-lib"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/nix-export-interop"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/node-app"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/node-lib"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/oci-multiplatform-e2e"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/offline-cache-e2e"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/overtake-submodule-migration"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/polyglot-go-app"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/polyglot-lib"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/polyglot-node-app"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/python-app"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/python-lib"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/recursive-cycle-detection"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/recursive-diamond-graph"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/registry-api-contract"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/registry-browser-e2e"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/rust-app"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/rust-lib"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/security-adversarial-e2e"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/security-path-traversal"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/shared-schema"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/submodule-consumer"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/subtree-consumer"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/swift-app"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/version-solver-e2e"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/workspace-monorepo"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/workspace-uninstall-e2e"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/zed-interfaces"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/zed-lib"
+    },
+    {
+      "from": "zed-pkg-test/.github",
+      "kind": "governs",
+      "rationale": "organization defaults, safety, and relationship declarations",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/zed-pkg-e2e"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/adapter-wiring-cleanup-e2e"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/api-contract-e2e"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/awkward-lib"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/concurrent-install-locking"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/constraint-solver-blackbox"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/csharp-app"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/dart-app"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/dart-lib"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/erlang-app"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/first-install-manifest"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/gleam-app"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/gleam-lib"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/go-app"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/go-lib"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/java-app"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/java-lib"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/kotlin-app"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/manager-interop-e2e"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/multiversion-lib"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/nix-export-interop"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/node-app"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/node-lib"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/oci-multiplatform-e2e"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/offline-cache-e2e"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/overtake-submodule-migration"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/polyglot-go-app"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/polyglot-lib"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/polyglot-node-app"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/python-app"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/python-lib"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/recursive-cycle-detection"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/recursive-diamond-graph"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/registry-api-contract"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/registry-browser-e2e"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/rust-app"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/rust-lib"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/security-adversarial-e2e"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/security-path-traversal"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/shared-schema"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/submodule-consumer"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/subtree-consumer"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/swift-app"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/version-solver-e2e"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/workspace-uninstall-e2e"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/zed-interfaces"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/zed-lib"
+    },
+    {
+      "from": "zed-pkg-test/workspace-monorepo",
+      "kind": "composes",
+      "rationale": "development workspace and release bill of materials",
+      "source_basis": "role-convention",
+      "status": "inferred",
+      "to": "zed-pkg-test/zed-pkg-e2e"
+    }
+  ],
+  "repositories": [
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/.github",
+      "lifecycle": "active",
+      "name": ".github",
+      "role": "organization_governance",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/api-contract-e2e",
+      "lifecycle": "active",
+      "name": "api-contract-e2e",
+      "role": "interfaces",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/registry-api-contract",
+      "lifecycle": "active",
+      "name": "registry-api-contract",
+      "role": "interfaces",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/shared-schema",
+      "lifecycle": "active",
+      "name": "shared-schema",
+      "role": "interfaces",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/zed-interfaces",
+      "lifecycle": "active",
+      "name": "zed-interfaces",
+      "role": "interfaces",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/adapter-wiring-cleanup-e2e",
+      "lifecycle": "active",
+      "name": "adapter-wiring-cleanup-e2e",
+      "role": "end_to_end_tests",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/manager-interop-e2e",
+      "lifecycle": "active",
+      "name": "manager-interop-e2e",
+      "role": "end_to_end_tests",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/oci-multiplatform-e2e",
+      "lifecycle": "active",
+      "name": "oci-multiplatform-e2e",
+      "role": "end_to_end_tests",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/offline-cache-e2e",
+      "lifecycle": "active",
+      "name": "offline-cache-e2e",
+      "role": "end_to_end_tests",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/registry-browser-e2e",
+      "lifecycle": "active",
+      "name": "registry-browser-e2e",
+      "role": "end_to_end_tests",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/security-adversarial-e2e",
+      "lifecycle": "active",
+      "name": "security-adversarial-e2e",
+      "role": "end_to_end_tests",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/version-solver-e2e",
+      "lifecycle": "active",
+      "name": "version-solver-e2e",
+      "role": "end_to_end_tests",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/workspace-uninstall-e2e",
+      "lifecycle": "active",
+      "name": "workspace-uninstall-e2e",
+      "role": "end_to_end_tests",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/zed-pkg-e2e",
+      "lifecycle": "active",
+      "name": "zed-pkg-e2e",
+      "role": "end_to_end_tests",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/workspace-monorepo",
+      "lifecycle": "active",
+      "name": "workspace-monorepo",
+      "role": "composition_workspace",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/csharp-app",
+      "lifecycle": "active",
+      "name": "csharp-app",
+      "role": "library",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/dart-app",
+      "lifecycle": "active",
+      "name": "dart-app",
+      "role": "library",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/dart-lib",
+      "lifecycle": "active",
+      "name": "dart-lib",
+      "role": "library",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/erlang-app",
+      "lifecycle": "active",
+      "name": "erlang-app",
+      "role": "library",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/gleam-app",
+      "lifecycle": "active",
+      "name": "gleam-app",
+      "role": "library",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/gleam-lib",
+      "lifecycle": "active",
+      "name": "gleam-lib",
+      "role": "library",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/java-app",
+      "lifecycle": "active",
+      "name": "java-app",
+      "role": "library",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/java-lib",
+      "lifecycle": "active",
+      "name": "java-lib",
+      "role": "library",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/kotlin-app",
+      "lifecycle": "active",
+      "name": "kotlin-app",
+      "role": "library",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/python-app",
+      "lifecycle": "active",
+      "name": "python-app",
+      "role": "library",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/python-lib",
+      "lifecycle": "active",
+      "name": "python-lib",
+      "role": "library",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/swift-app",
+      "lifecycle": "active",
+      "name": "swift-app",
+      "role": "library",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/awkward-lib",
+      "lifecycle": "active",
+      "name": "awkward-lib",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/concurrent-install-locking",
+      "lifecycle": "active",
+      "name": "concurrent-install-locking",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/constraint-solver-blackbox",
+      "lifecycle": "active",
+      "name": "constraint-solver-blackbox",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/first-install-manifest",
+      "lifecycle": "active",
+      "name": "first-install-manifest",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/go-app",
+      "lifecycle": "active",
+      "name": "go-app",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/go-lib",
+      "lifecycle": "active",
+      "name": "go-lib",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/multiversion-lib",
+      "lifecycle": "active",
+      "name": "multiversion-lib",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/nix-export-interop",
+      "lifecycle": "active",
+      "name": "nix-export-interop",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/node-app",
+      "lifecycle": "active",
+      "name": "node-app",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/node-lib",
+      "lifecycle": "active",
+      "name": "node-lib",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/overtake-submodule-migration",
+      "lifecycle": "active",
+      "name": "overtake-submodule-migration",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/polyglot-go-app",
+      "lifecycle": "active",
+      "name": "polyglot-go-app",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/polyglot-lib",
+      "lifecycle": "active",
+      "name": "polyglot-lib",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/polyglot-node-app",
+      "lifecycle": "active",
+      "name": "polyglot-node-app",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/recursive-cycle-detection",
+      "lifecycle": "active",
+      "name": "recursive-cycle-detection",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/recursive-diamond-graph",
+      "lifecycle": "active",
+      "name": "recursive-diamond-graph",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/rust-app",
+      "lifecycle": "active",
+      "name": "rust-app",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/rust-lib",
+      "lifecycle": "active",
+      "name": "rust-lib",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/security-path-traversal",
+      "lifecycle": "active",
+      "name": "security-path-traversal",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/submodule-consumer",
+      "lifecycle": "active",
+      "name": "submodule-consumer",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/subtree-consumer",
+      "lifecycle": "active",
+      "name": "subtree-consumer",
+      "role": "uncategorized",
+      "visibility": "public"
+    },
+    {
+      "archived": false,
+      "default_branch": "main",
+      "fork": false,
+      "full_name": "zed-pkg-test/zed-lib",
+      "lifecycle": "active",
+      "name": "zed-lib",
+      "role": "uncategorized",
+      "visibility": "public"
+    }
+  ],
+  "role_contracts": {
+    "api_service": "Owns public APIs, webhooks, authorization, validation, and orchestration.",
+    "client_sdk": "Depends on interfaces and exposes generated clients plus thin wrappers.",
+    "composition_workspace": "Composes source repositories and records the release BOM.",
+    "end_to_end_tests": "Runs black-box compatibility and user-flow checks.",
+    "infrastructure": "Owns product cloud resources; promotion remains GitOps-controlled.",
+    "interfaces": "Own OpenAPI, events, JSON Schema, compatibility fixtures, and DTO inputs.",
+    "mcp_server": "Calls product SDKs/APIs; no parallel domain persistence.",
+    "sync_service": "Owns product conflict policy/adapters and wraps Opto reconciliation.",
+    "web_bff": "Owns browser sessions, CSRF, HTML/SSR, and calls the product API."
+  },
+  "schema_version": "1.0.0",
+  "service_boundary_policy": {
+    "cross_service_database_access": "forbidden-by-default",
+    "mcp_database_access": "forbidden-by-default; MCP calls the product API/SDK",
+    "preferred_cross_service_calls": "typed API/SDK, event, or owned replicated read model"
+  }
+}

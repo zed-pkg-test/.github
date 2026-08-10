@@ -5,11 +5,13 @@ import re
 import sys
 from pathlib import Path
 
+from workflow_policy import only_calls_reusable_workflows
+
 ROOT = Path(sys.argv[1] if len(sys.argv) > 1 else '.').resolve()
 REQUIRED = [
     'README.md', 'profile/README.md', 'ORG_CONTEXT.md', 'agents.md', 'AGENTS.md',
     'CONTRIBUTING.md', 'SECURITY.md', 'SUPPORT.md', 'CODE_OF_CONDUCT.md',
-    'GOVERNANCE.md', '.github/pull_request_template.md',
+    'GOVERNANCE.md',
     '.github/copilot-instructions.md', '.github/dependabot.yml',
     '.github/ISSUE_TEMPLATE/bug_report.yml',
     '.github/ISSUE_TEMPLATE/feature_request.yml',
@@ -24,6 +26,13 @@ REQUIRED = [
     'docs/REPOSITORY_RELATIONSHIPS.md',
     'scripts/repository_relationships_lib.py',
     'scripts/validate_repository_relationships.py',
+]
+REQUIRED_ANY = [
+    (
+        'PULL_REQUEST_TEMPLATE.md',
+        '.github/PULL_REQUEST_TEMPLATE.md',
+        '.github/pull_request_template.md',
+    ),
 ]
 PHRASES = [
     'avoid git rebase in favor of git merge',
@@ -44,6 +53,10 @@ def fail(message: str) -> None:
 missing = [path for path in REQUIRED if not (ROOT / path).is_file()]
 if missing:
     fail('missing required files: ' + ', '.join(missing))
+
+for alternatives in REQUIRED_ANY:
+    if not any((ROOT / path).is_file() for path in alternatives):
+        fail('missing required file (expected one of): ' + ', '.join(alternatives))
 
 agents = (ROOT / 'agents.md').read_text(encoding='utf-8')
 for phrase in PHRASES:
@@ -71,7 +84,7 @@ for path in workflow_paths:
     text = path.read_text(encoding='utf-8')
     if 'permissions:' not in text:
         fail(f'workflow lacks explicit permissions: {path.relative_to(ROOT)}')
-    if 'timeout-minutes:' not in text:
+    if 'timeout-minutes:' not in text and not only_calls_reusable_workflows(text):
         fail(f'workflow lacks timeout: {path.relative_to(ROOT)}')
     for number, line in enumerate(text.splitlines(), 1):
         match = re.search(r'^\\s*(?:-\\s+)?uses:\\s*([^\\s#]+)', line)

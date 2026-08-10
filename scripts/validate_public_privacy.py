@@ -29,6 +29,11 @@ def validate(root: Path) -> list[str]:
     errors: list[str] = []
     for path in tracked_paths(root):
         relative = path.relative_to(root).as_posix()
+        # A dirty worktree may contain an intentional deletion that has not yet
+        # been staged. Only scan files that are actually present; the committed
+        # tree is still covered because deleted paths leave the index on commit.
+        if not path.exists() and not path.is_symlink():
+            continue
         try:
             if path.is_symlink():
                 text = path.readlink().as_posix()

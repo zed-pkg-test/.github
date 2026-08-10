@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: den-2839-cache-poll-guard-${{ github.event.pull_request.number || github.ref }}
+  group: den-2839-cache-poll-guard-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

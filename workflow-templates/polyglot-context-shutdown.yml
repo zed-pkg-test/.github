@@ -1,0 +1,14 @@
+name: Polyglot context and shutdown conformance
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lifecycle:
+    uses: ORESoftware/next-loggers.ts/.github/workflows/server-lifecycle-audit-external.yml@45f587042ee6bcb1c7c739946872ccbc8b726f7b
+    with:
+      strict: true

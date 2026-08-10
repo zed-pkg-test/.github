@@ -1,0 +1,4 @@
+[submodule "apps/deployment"]
+	path = apps/deployment
+	url = https://github.com/example/app-infra.git
+	branch = main

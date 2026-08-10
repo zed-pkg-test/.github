@@ -1,0 +1,4 @@
+[submodule "apps/app-infra"]
+	path = apps/app-infra
+	url = git@github.com:example/app-infra.git
+	branch = main

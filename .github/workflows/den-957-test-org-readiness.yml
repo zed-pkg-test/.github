@@ -1,0 +1,38 @@
+name: DEN-957 missing test-org readiness
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/den-957-test-org-readiness.yml
+      - contract-tests/den-957-test-org-readiness/**
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/den-957-test-org-readiness.yml
+      - contract-tests/den-957-test-org-readiness/**
+  schedule:
+    - cron: '17 13 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: den-957-test-org-readiness-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out without credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: false
+      - name: Validate readiness manifest
+        run: node contract-tests/den-957-test-org-readiness/scripts/validate-test-org-readiness.mjs
+      - name: Probe matching organization prerequisites
+        run: node contract-tests/den-957-test-org-readiness/scripts/validate-test-org-readiness.mjs --live

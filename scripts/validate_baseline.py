@@ -35,9 +35,11 @@ REQUIRED_ANY = [
     ),
 ]
 PHRASES = [
-    'avoid git rebase in favor of git merge',
     'git stash', 'git reset', 'git clean', 'git filter-repo',
     '3–10 relevant commits', 'Never report',
+]
+PHRASE_ALTERNATIVES = [
+    ('avoid git rebase in favor of git merge', '`git rebase`'),
 ]
 SECRET_PATTERNS = [
     re.compile(r'gh[pousr]_[A-Za-z0-9]{20,}'),
@@ -46,9 +48,11 @@ SECRET_PATTERNS = [
     re.compile(r'(?i)authorization:\\s*bearer\\s+[A-Za-z0-9._-]{16,}'),
 ]
 
+
 def fail(message: str) -> None:
     print(f'ERROR: {message}', file=sys.stderr)
     raise SystemExit(1)
+
 
 missing = [path for path in REQUIRED if not (ROOT / path).is_file()]
 if missing:
@@ -62,6 +66,10 @@ agents = (ROOT / 'agents.md').read_text(encoding='utf-8')
 for phrase in PHRASES:
     if phrase not in agents:
         fail(f'agents.md missing required phrase: {phrase!r}')
+
+for alternatives in PHRASE_ALTERNATIVES:
+    if not any(phrase in agents for phrase in alternatives):
+        fail('agents.md missing required semantic phrase (expected one of): ' + ', '.join(alternatives))
 
 for path in ROOT.rglob('*'):
     if not path.is_file() or '.git' in path.parts:
@@ -87,7 +95,7 @@ for path in workflow_paths:
     if 'timeout-minutes:' not in text and not only_calls_reusable_workflows(text):
         fail(f'workflow lacks timeout: {path.relative_to(ROOT)}')
     for number, line in enumerate(text.splitlines(), 1):
-        match = re.search(r'^\\s*(?:-\\s+)?uses:\\s*([^\\s#]+)', line)
+        match = re.search(r'^\s*(?:-\s+)?uses:\s*([^\s#]+)', line)
         if not match:
             continue
         ref = match.group(1)
@@ -103,6 +111,7 @@ for path in workflow_paths:
         fail(f'checkout credentials persist in {path.relative_to(ROOT)}')
 
 import subprocess
+
 relationship_check = subprocess.run(
     [sys.executable, str(ROOT / 'scripts/validate_repository_relationships.py'), str(ROOT)],
     text=True, capture_output=True, check=False,

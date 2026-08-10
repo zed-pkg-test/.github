@@ -1,0 +1,8 @@
+[submodule "apps/app-api-server.rs"]
+	path = apps/app-api-server.rs
+	url = git@github.com:example/app-api-server.rs.git
+	branch = main
+[submodule "tools/flags-2-env"]
+	path = tools/flags-2-env
+	url = https://github.com/ORESoftware/flags-2-env.git
+	branch = main

@@ -1,0 +1,4 @@
+[submodule "deploy/app-infra"]
+	path = deploy/app-infra
+	url = ../app-infra.git
+	branch = main

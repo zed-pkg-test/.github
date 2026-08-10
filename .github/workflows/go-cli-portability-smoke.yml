@@ -1,0 +1,19 @@
+name: reusable Go CLI portability smoke
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/go-cli-portability-smoke.yml'
+      - 'fixtures/go-cli/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  go-cli:
+    uses: ORESoftware/.github/.github/workflows/reusable-go-cli-portability.yml@89974ffcd5f6848bfdf5117e3edf979c2dcf8a03
+    with:
+      working-directory: fixtures/go-cli
+      main-package: .
+      run-smoke: true

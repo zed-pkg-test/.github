@@ -13,6 +13,15 @@ on:
 permissions:
   contents: read
 
+env:
+  SCHEDULE_TIMEZONE: Etc/UTC
+  RUN_EVIDENCE_SCHEMA: zed-pkg-test.scheduled-run-evidence.v1
+  MISSED_RUN_POLICY: fail-closed-no-valid-evidence-means-missed
+
+concurrency:
+  group: zed-clients-polyglot-matrix-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   sdk-clients:
     uses: zed-pkg-test/.github/.github/workflows/sdk-client-language-matrix.yml@df3eed96202810b7e7d6667fabc3041b19e6a22f

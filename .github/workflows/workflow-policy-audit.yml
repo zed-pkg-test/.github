@@ -1,0 +1,89 @@
+name: Workflow policy audit canary
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: workflow-policy-audit-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    permissions:
+      contents: read
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout target repository without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          show-progress: false
+
+      - name: Checkout immutable workflow-policy source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: gha-indie-worker/.github
+          ref: 880e571deb5462bfa13a2d3fa6a9c01dea5f6713
+          path: .workflow-policy
+          persist-credentials: false
+          show-progress: false
+
+      - name: Setup Python 3.12
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+          cache: ''
+
+      - name: Verify immutable linter checkout
+        env:
+          EXPECTED_LINTER_SHA: 880e571deb5462bfa13a2d3fa6a9c01dea5f6713
+        run: |
+          set -euo pipefail
+          actual_sha="$(git -C .workflow-policy rev-parse HEAD)"
+          test "$actual_sha" = "$EXPECTED_LINTER_SHA"
+
+      - name: Audit checked-out workflow text
+        env:
+          TARGET_REPOSITORY: ${{ github.repository }}
+          TARGET_SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          python .workflow-policy/scripts/workflow_policy_linter.py \
+            --policy .workflow-policy/workflow-policy.json \
+            --exceptions .workflow-policy/workflow-policy-exceptions.json \
+            --repository "$TARGET_REPOSITORY" \
+            --source-sha "$TARGET_SOURCE_SHA" \
+            --mode audit \
+            --format json \
+            --output artifacts/workflow-policy-report.json
+          python .workflow-policy/scripts/workflow_policy_linter.py \
+            --policy .workflow-policy/workflow-policy.json \
+            --exceptions .workflow-policy/workflow-policy-exceptions.json \
+            --repository "$TARGET_REPOSITORY" \
+            --source-sha "$TARGET_SOURCE_SHA" \
+            --mode audit \
+            --format sarif \
+            --output artifacts/workflow-policy-report.sarif
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path('artifacts/workflow-policy-report.json').read_text(encoding='utf-8'))
+          print(json.dumps(report['summary'], sort_keys=True))
+          PY
+
+      - name: Publish exact-head audit evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: workflow-policy-audit-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 30

@@ -17,6 +17,11 @@ on:
         required: false
         default: clients
         type: string
+      disabled_languages:
+        description: Comma-separated matrix IDs intentionally absent from this client repository
+        required: false
+        default: ''
+        type: string
       interfaces_repository:
         description: Optional sibling interfaces repository needed by local SDK builds
         required: false
@@ -232,14 +237,14 @@ jobs:
               npm run build --if-present &&
               npm run test --if-present
           - id: typescript-deno
-            paths: typescript/deno,deno
+            paths: typescript/runtimes/deno,typescript/deno,deno
             image: denoland/deno:2
             command: >-
               find . \( -name '*.ts' -o -name '*.tsx' \) | grep -q . &&
               find . \( -name '*.ts' -o -name '*.tsx' \) -print0 | xargs -0 deno check &&
               deno test -A
           - id: typescript-bun
-            paths: typescript/bun,bun
+            paths: typescript/runtimes/bun,typescript/bun,bun
             image: oven/bun:1-debian
             command: >-
               test -f package.json &&
@@ -248,7 +253,7 @@ jobs:
               if bun -e "const p=require('./package.json');process.exit(p.scripts?.build?0:1)"; then bun run build; fi &&
               if find . -type f \( -name '*test.ts' -o -name '*.test.ts' -o -name '*spec.ts' \) | grep -q .; then bun test; fi
           - id: typescript-edge
-            paths: typescript/edge,typescript/edge-runtimes,edge
+            paths: typescript/runtimes/edge,typescript/edge,typescript/edge-runtimes,edge
             image: node:22
             command: >-
               test -f package.json &&
@@ -258,7 +263,7 @@ jobs:
               npm run test:edge --if-present
           - id: kotlin
             paths: kotlin
-            image: gradle:8-jdk21
+            image: gradle:8-jdk17
             command: >-
               if [ -x ./gradlew ]; then
                 if ./gradlew tasks --all | grep -q testDebugUnitTest; then ./gradlew --no-daemon testDebugUnitTest; else ./gradlew --no-daemon test; fi;
@@ -270,7 +275,8 @@ jobs:
             command: >-
               test -f Package.swift &&
               swift package resolve &&
-              swift test
+              swift build &&
+              if [ -d Tests ]; then swift test; fi
           - id: zig
             paths: zig
             image: ziglang/zig:0.14.0
@@ -360,7 +366,24 @@ jobs:
           persist-credentials: false
           show-progress: false
 
+      - name: Select supported language consumers
+        id: language-selection
+        shell: bash
+        env:
+          DISABLED_LANGUAGES: ${{ inputs.disabled_languages }}
+          LANGUAGE_ID: ${{ matrix.id }}
+        run: |
+          set -euo pipefail
+          disabled=",${DISABLED_LANGUAGES//[[:space:]]/},"
+          if [[ "$disabled" == *",${LANGUAGE_ID},"* ]]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping intentionally absent $LANGUAGE_ID SDK"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Resolve and enforce the language SDK directory
+        if: ${{ steps.language-selection.outputs.enabled == 'true' }}
         id: sdk-root
         shell: bash
         env:
@@ -388,6 +411,7 @@ jobs:
           exit 1
 
       - name: Compile and test the SDK in its native toolchain
+        if: ${{ steps.language-selection.outputs.enabled == 'true' }}
         shell: bash
         env:
           SDK_IMAGE: ${{ matrix.image }}

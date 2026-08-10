@@ -4,3 +4,4 @@ tmp/worktrees
 temp/worktrees
 fixtures/rust-cli/target/
 fixtures/node-cli/node_modules/
+__pycache__/

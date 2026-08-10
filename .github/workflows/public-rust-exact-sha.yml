@@ -24,6 +24,9 @@ on:
       checkout_token:
         description: Optional read-only token for a private target repository
         required: false
+      TEST_ORG_READ_TOKEN:
+        description: Optional organization-level read token fallback for private targets
+        required: false
   workflow_dispatch:
     inputs:
       repository:

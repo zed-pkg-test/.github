@@ -30,7 +30,8 @@ jobs:
       clients_repository: zed-pkg/zed-clients
       clients_ref: 3196895c35412ee608750a8db830dbe83ec6a14c
       clients_root: clients
-      disabled_languages: kotlin
+      # Kotlin and Deno are validated below with their native build contracts.
+      disabled_languages: kotlin,typescript-deno
       interfaces_repository: zed-pkg/zed-interfaces
       interfaces_ref: main
       interfaces_path: zed-interfaces
@@ -38,8 +39,68 @@ jobs:
     secrets:
       read_token: ${{ secrets.TEST_ORG_READ_TOKEN }}
 
+  deno-native:
+    name: Deno native consumer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact zed-clients candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: zed-pkg/zed-clients
+          ref: ${{ env.ZED_CLIENTS_CANDIDATE_SHA }}
+          path: zed-clients
+          token: ${{ secrets.TEST_ORG_READ_TOKEN || github.token }}
+          persist-credentials: false
+          show-progress: false
+
+      - name: Install exact Deno toolchain
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.9.5
+          cache: false
+
+      - name: Verify exact candidate and Deno contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C zed-clients rev-parse HEAD)" = "$ZED_CLIENTS_CANDIDATE_SHA"
+          test -f zed-clients/clients/typescript/deno/deno.json
+          test -f zed-clients/clients/typescript/deno/mod.ts
+          test -f zed-clients/clients/typescript/deno/mod_test.ts
+
+      - name: Check and test the Deno SDK
+        working-directory: zed-clients/clients/typescript/deno
+        shell: bash
+        run: |
+          set -euo pipefail
+          deno --version
+          deno check mod.ts mod_test.ts
+          deno test -A
+
+      - name: Record exact-head Deno evidence
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/deno-native
+          printf 'repository=zed-pkg/zed-clients\nrequested_sha=%s\nactual_sha=%s\nbuild_contract=clients/typescript/deno/deno.json\n' \
+            "$ZED_CLIENTS_CANDIDATE_SHA" \
+            "$(git -C zed-clients rev-parse HEAD)" \
+            > artifacts/deno-native/source.txt
+          deno --version > artifacts/deno-native/deno-version.txt
+
+      - name: Publish Deno exact-head evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zed-clients-deno-native-${{ env.ZED_CLIENTS_CANDIDATE_SHA }}
+          path: artifacts/deno-native/
+          if-no-files-found: error
+          retention-days: 30
+
   kotlin-maven:
-    name: kotlin Maven consumer
+    name: Kotlin Maven consumer
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:

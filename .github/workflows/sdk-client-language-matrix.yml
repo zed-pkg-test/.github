@@ -183,12 +183,13 @@ jobs:
               cargo test --workspace --all-targets --all-features
           - id: java
             paths: java
-            image: maven:3.9-eclipse-temurin-21
+            image: maven:3.9-eclipse-temurin-17
             command: >-
-              if [ -x ./mvnw ]; then ./mvnw -B test;
+              if [ -x ./test.sh ]; then ./test.sh;
+              elif [ -x ./mvnw ]; then ./mvnw -B test;
               elif [ -f pom.xml ]; then mvn -B test;
               elif [ -x ./gradlew ]; then ./gradlew --no-daemon test;
-              elif [ -f build.gradle ] || [ -f build.gradle.kts ]; then echo 'Java SDK requires a Gradle wrapper' >&2; exit 1;
+              elif [ -f build.gradle ] || [ -f build.gradle.kts ]; then echo 'Java SDK requires test.sh or a Gradle wrapper' >&2; exit 1;
               else find . -name '*.java' -print0 | xargs -0 -r javac -Werror; fi
           - id: golang
             paths: go,golang
@@ -238,7 +239,7 @@ jobs:
               npm run test --if-present
           - id: typescript-deno
             paths: typescript/runtimes/deno,typescript/deno,deno
-            image: denoland/deno:2
+            image: denoland/deno:2.9.5
             command: >-
               find . \( -name '*.ts' -o -name '*.tsx' \) | grep -q . &&
               find . \( -name '*.ts' -o -name '*.tsx' \) -print0 | xargs -0 deno check &&
@@ -343,6 +344,7 @@ jobs:
           token: ${{ secrets.read_token != '' && secrets.read_token || github.token }}
           persist-credentials: false
           show-progress: false
+          submodules: recursive
 
       - name: Check out the interfaces dependency
         if: ${{ inputs.interfaces_repository != '' }}

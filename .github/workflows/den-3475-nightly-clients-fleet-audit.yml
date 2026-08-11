@@ -1,14 +1,9 @@
-name: DEN-3475 nightly clients fleet audit
+name: DEN-3475 clients fleet audit canary
 
+# Scheduled ownership belongs to
+# zed-pkg/.github/.github/workflows/nightly-clients-fleet-hardening.yml.
+# This test-org workflow remains available only as an explicit manual canary.
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/den-3475-nightly-clients-fleet-audit.yml'
-      - 'contract-tests/den-3475-clients-fleet-audit/**'
-  schedule:
-    - cron: '0 3 * * *'
-      timezone: America/Chicago
   workflow_dispatch:
     inputs:
       mode:
@@ -91,19 +86,13 @@ jobs:
           COMMAND_TIMEOUT_MS: '1200000'
         run: |
           set -euo pipefail
-          mode='audit'
-          max_repositories='0'
+          mode='${{ inputs.mode }}'
+          max_repositories='${{ inputs.max_repositories }}'
           run_language_builds='1'
           run_consumers='1'
 
-          if [[ "${GITHUB_EVENT_NAME}" == 'schedule' ]]; then
-            mode='harden'
-          elif [[ "${GITHUB_EVENT_NAME}" == 'workflow_dispatch' ]]; then
-            mode='${{ inputs.mode }}'
-            max_repositories='${{ inputs.max_repositories }}'
-            [[ '${{ inputs.run_language_builds }}' == 'true' ]] || run_language_builds='0'
-            [[ '${{ inputs.run_consumers }}' == 'true' ]] || run_consumers='0'
-          fi
+          [[ '${{ inputs.run_language_builds }}' == 'true' ]] || run_language_builds='0'
+          [[ '${{ inputs.run_consumers }}' == 'true' ]] || run_consumers='0'
 
           export RUN_LANGUAGE_BUILDS="$run_language_builds"
           export RUN_CONSUMERS="$run_consumers"

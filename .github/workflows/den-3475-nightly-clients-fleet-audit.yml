@@ -1,4 +1,4 @@
-name: DEN-3475 nightly clients fleet audit
+name: DEN-3475 clients fleet conformance audit
 
 on:
   push:
@@ -6,9 +6,8 @@ on:
     paths:
       - '.github/workflows/den-3475-nightly-clients-fleet-audit.yml'
       - 'contract-tests/den-3475-clients-fleet-audit/**'
-  schedule:
-    - cron: '0 3 * * *'
-      timezone: America/Chicago
+  # The canonical 03:00 America/Chicago scheduler lives in zed-pkg/.github.
+  # Keep this test-org controller explicit/manual to prevent duplicate fleet fan-out.
   workflow_dispatch:
     inputs:
       mode:
@@ -39,14 +38,13 @@ permissions:
   contents: read
 
 env:
-  SCHEDULE_TIMEZONE: America/Chicago
+  CANONICAL_NIGHTLY_CONTROLLER: zed-pkg/.github/.github/workflows/nightly-clients-fleet-hardening.yml
   RUN_EVIDENCE_SCHEMA: zed-pkg-test.clients-fleet-audit.v1
-  MISSED_RUN_POLICY: fail-closed-no-valid-evidence-means-missed
   REUSABLE_WORKFLOW_REF: 9b8b69c47c6a3704a33707d9162cd27cdf92c7d7
   LINEAR_ISSUE: DEN-3475
 
 concurrency:
-  group: den-3475-clients-fleet-${{ github.workflow }}-${{ github.ref }}
+  group: den-3475-clients-conformance-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -96,9 +94,7 @@ jobs:
           run_language_builds='1'
           run_consumers='1'
 
-          if [[ "${GITHUB_EVENT_NAME}" == 'schedule' ]]; then
-            mode='harden'
-          elif [[ "${GITHUB_EVENT_NAME}" == 'workflow_dispatch' ]]; then
+          if [[ "${GITHUB_EVENT_NAME}" == 'workflow_dispatch' ]]; then
             mode='${{ inputs.mode }}'
             max_repositories='${{ inputs.max_repositories }}'
             [[ '${{ inputs.run_language_builds }}' == 'true' ]] || run_language_builds='0'

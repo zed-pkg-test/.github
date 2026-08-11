@@ -1,0 +1,140 @@
+name: DEN-3475 nightly clients fleet audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/den-3475-nightly-clients-fleet-audit.yml'
+      - 'contract-tests/den-3475-clients-fleet-audit/**'
+  schedule:
+    - cron: '0 3 * * *'
+      timezone: America/Chicago
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Audit only, or also open safe additive hardening PRs
+        required: true
+        default: audit
+        type: choice
+        options:
+          - audit
+          - harden
+      max_repositories:
+        description: Optional deterministic inventory cap; 0 audits the complete fleet
+        required: true
+        default: '0'
+        type: string
+      run_language_builds:
+        description: Compile and test every detected client runtime
+        required: true
+        default: true
+        type: boolean
+      run_consumers:
+        description: Install and test explicit consumers in matching *-test organizations
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  SCHEDULE_TIMEZONE: America/Chicago
+  RUN_EVIDENCE_SCHEMA: zed-pkg-test.clients-fleet-audit.v1
+  MISSED_RUN_POLICY: fail-closed-no-valid-evidence-means-missed
+  REUSABLE_WORKFLOW_REF: 9b8b69c47c6a3704a33707d9162cd27cdf92c7d7
+  LINEAR_ISSUE: DEN-3475
+
+concurrency:
+  group: den-3475-clients-fleet-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: Discover, audit, harden, and test the clients fleet
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    steps:
+      - name: Check out controller without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          show-progress: false
+          submodules: false
+
+      - name: Verify controller and runner prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          for file in support.mjs execution.mjs hardening.mjs audit-clients-fleet.mjs; do
+            node --check "contract-tests/den-3475-clients-fleet-audit/$file"
+          done
+          node --test contract-tests/den-3475-clients-fleet-audit/lib.test.mjs
+          git --version
+          cargo --version
+          docker version
+
+      - name: Run fail-closed fleet audit
+        id: fleet-audit
+        continue-on-error: true
+        shell: bash
+        env:
+          CLIENTS_AUDIT_GH_TOKEN: ${{ secrets.CLIENTS_AUDIT_GH_TOKEN || secrets.SUBMODULE_TOKEN || secrets.TEST_ORG_READ_TOKEN }}
+          GH_TOKEN: ${{ secrets.CLIENTS_AUDIT_GH_TOKEN || secrets.SUBMODULE_TOKEN || secrets.TEST_ORG_READ_TOKEN }}
+          LINEAR_API_TOKEN: ${{ secrets.LINEAR_API_TOKEN || secrets.LINEAR_TOKEN }}
+          OUTPUT_DIR: ${{ github.workspace }}/artifacts/den-3475
+          WORK_DIR: ${{ runner.temp }}/den-3475-work
+          REQUIRED_RUNTIME_COUNT: '15'
+          AUDIT_CONCURRENCY: '1'
+          MAX_CONSUMERS_PER_PACKAGE: '24'
+          COMMAND_TIMEOUT_MS: '1200000'
+        run: |
+          set -euo pipefail
+          mode='audit'
+          max_repositories='0'
+          run_language_builds='1'
+          run_consumers='1'
+
+          if [[ "${GITHUB_EVENT_NAME}" == 'schedule' ]]; then
+            mode='harden'
+          elif [[ "${GITHUB_EVENT_NAME}" == 'workflow_dispatch' ]]; then
+            mode='${{ inputs.mode }}'
+            max_repositories='${{ inputs.max_repositories }}'
+            [[ '${{ inputs.run_language_builds }}' == 'true' ]] || run_language_builds='0'
+            [[ '${{ inputs.run_consumers }}' == 'true' ]] || run_consumers='0'
+          fi
+
+          export RUN_LANGUAGE_BUILDS="$run_language_builds"
+          export RUN_CONSUMERS="$run_consumers"
+
+          node contract-tests/den-3475-clients-fleet-audit/audit-clients-fleet.mjs \
+            --mode "$mode" \
+            --max-repositories "$max_repositories"
+
+      - name: Publish human-readable run summary
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -f artifacts/den-3475/summary.md ]]; then
+            cat artifacts/den-3475/summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '# DEN-3475 clients fleet audit\n\nNo summary artifact was produced; treat this run as missed.\n' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Publish exact run evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: den-3475-clients-fleet-${{ github.run_id }}-${{ github.run_attempt }}
+          path: artifacts/den-3475/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce fleet audit outcome
+        if: ${{ always() && steps.fleet-audit.outcome != 'success' }}
+        shell: bash
+        run: |
+          echo 'DEN-3475 fleet audit reported errors; inspect the run ledger and per-repository issues.' >&2
+          exit 1

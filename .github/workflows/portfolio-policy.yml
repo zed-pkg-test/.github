@@ -1,6 +1,16 @@
 name: Portfolio policy
-on: [pull_request, workflow_dispatch]
-permissions: {contents: read}
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portfolio-policy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   policy:
     runs-on: ubuntu-latest

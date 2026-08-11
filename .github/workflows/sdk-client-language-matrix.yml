@@ -148,8 +148,6 @@ jobs:
             command: >-
               if [ -x ./test.sh ]; then ./test.sh; else
               if [ -f ../../syncer.c/bindings/beam/mix.exs ]; then
-              apt-get update >/dev/null &&
-              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends build-essential cargo >/dev/null &&
               (cd ../../syncer.c/bindings/beam &&
               mix local.hex --force &&
               mix local.rebar --force &&
@@ -435,15 +433,35 @@ jobs:
         if: ${{ steps.language-selection.outputs.enabled == 'true' }}
         shell: bash
         env:
+          LANGUAGE_ID: ${{ matrix.id }}
           SDK_IMAGE: ${{ matrix.image }}
           SDK_COMMAND: ${{ matrix.command }}
           SDK_ROOT: ${{ steps.sdk-root.outputs.root }}
         run: |
           set -euo pipefail
-          docker pull "$SDK_IMAGE"
+          runtime_image="$SDK_IMAGE"
+          beam_dockerfile="_upstream/syncer.c/bindings/beam/Dockerfile.test"
+          if [[ "$LANGUAGE_ID" == "gleamlang" && -f "$beam_dockerfile" ]]; then
+            case "$(uname -m)" in
+              x86_64) target_arch="amd64" ;;
+              aarch64|arm64) target_arch="arm64" ;;
+              *)
+                echo "Unsupported runner architecture for the BEAM test image: $(uname -m)" >&2
+                exit 1
+                ;;
+            esac
+            runtime_image="opto-sync-beam-test:local"
+            docker build \
+              --build-arg "TARGETARCH=$target_arch" \
+              --file "$beam_dockerfile" \
+              --tag "$runtime_image" \
+              "$(dirname "$beam_dockerfile")"
+          else
+            docker pull "$runtime_image"
+          fi
           docker run --rm \
             --entrypoint sh \
             --volume "$GITHUB_WORKSPACE:/workspace" \
             --workdir "/workspace/$SDK_ROOT" \
-            "$SDK_IMAGE" \
+            "$runtime_image" \
             -c "set -eu; $SDK_COMMAND"

@@ -24,6 +24,15 @@ class SdkClientLanguageMatrixTests(unittest.TestCase):
         self.assertIsNotNone(match, f"missing {language_id} matrix entry")
         return match.group(0)
 
+    def native_toolchain_step(self) -> str:
+        match = re.search(
+            r"^      - name: Compile and test the SDK in its native toolchain\n(?P<body>.*?)(?=^      - name: |\Z)",
+            self.workflow,
+            flags=re.MULTILINE | re.DOTALL,
+        )
+        self.assertIsNotNone(match, "missing native toolchain step")
+        return match.group(0)
+
     def test_upstream_checkout_recurses_public_source_submodules(self) -> None:
         match = re.search(
             r"^      - name: Check out the upstream clients repository\n(?P<body>.*?)(?=^      - name: )",
@@ -55,6 +64,32 @@ class SdkClientLanguageMatrixTests(unittest.TestCase):
         self.assertIn("export OPTO_SYNC_BEAM_EBIN=", gleam)
         self.assertIn("export OPTO_SYNC_ELIXIR_EBIN=", gleam)
         self.assertIn("gleam test", gleam)
+        self.assertNotIn("apt-get install", gleam)
+        self.assertNotIn(" cargo ", gleam)
+
+    def test_gleam_prefers_the_source_owned_pinned_beam_image(self) -> None:
+        step = self.native_toolchain_step()
+        self.assertIn("          LANGUAGE_ID: ${{ matrix.id }}\n", step)
+        self.assertIn(
+            'beam_dockerfile="_upstream/syncer.c/bindings/beam/Dockerfile.test"',
+            step,
+        )
+        self.assertIn(
+            'if [[ "$LANGUAGE_ID" == "gleamlang" && -f "$beam_dockerfile" ]]; then',
+            step,
+        )
+        self.assertIn('x86_64) target_arch="amd64" ;;', step)
+        self.assertIn('aarch64|arm64) target_arch="arm64" ;;', step)
+        self.assertIn('runtime_image="opto-sync-beam-test:local"', step)
+        self.assertIn('--build-arg "TARGETARCH=$target_arch"', step)
+        self.assertIn('--file "$beam_dockerfile"', step)
+        self.assertIn('"$(dirname "$beam_dockerfile")"', step)
+
+    def test_generic_consumers_pull_the_declared_matrix_image(self) -> None:
+        step = self.native_toolchain_step()
+        self.assertIn('runtime_image="$SDK_IMAGE"', step)
+        self.assertIn('else\n            docker pull "$runtime_image"\n          fi', step)
+        self.assertIn('            "$runtime_image" \\\n', step)
 
     def test_java_prefers_native_tests_and_keeps_maven_on_jdk17(self) -> None:
         java = self.matrix_entry("java")

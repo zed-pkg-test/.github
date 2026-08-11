@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zpkg.tech/schemas/client-api-surface/v1.json",
+  "title": "Zed polyglot client API surface",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "package", "runtimes", "symbols"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "schemaVersion": { "const": "1.0.0" },
+    "package": { "type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$" },
+    "sourceContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit", "digest"],
+      "properties": {
+        "repository": { "type": "string" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "runtimes": {
+      "type": "array",
+      "minItems": 15,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "root"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "root": { "type": "string", "pattern": "^clients/" },
+          "packageManifest": { "type": "string" },
+          "symbolManifest": { "type": "string" }
+        }
+      }
+    },
+    "symbols": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/symbol" }
+    }
+  },
+  "$defs": {
+    "visibility": { "enum": ["public", "private"] },
+    "kind": { "enum": ["class", "method", "function", "interface", "type"] },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "type": ["string", "object"] },
+        "required": { "type": "boolean", "default": true },
+        "description": { "type": "string" }
+      }
+    },
+    "implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtime", "status"],
+      "properties": {
+        "runtime": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["implemented", "not-applicable"] },
+        "path": { "type": "string" },
+        "symbol": { "type": "string" },
+        "signature": { "type": ["string", "object"] },
+        "reason": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "implemented" } } },
+          "then": { "required": ["path", "symbol"] }
+        },
+        {
+          "if": { "properties": { "status": { "const": "not-applicable" } } },
+          "then": { "required": ["reason"] }
+        }
+      ]
+    },
+    "symbol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "visibility", "name", "signature", "implementations"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[A-Za-z0-9_.:/#-]+$" },
+        "kind": { "$ref": "#/$defs/kind" },
+        "visibility": { "$ref": "#/$defs/visibility" },
+        "name": { "type": "string", "minLength": 1 },
+        "container": { "type": "string" },
+        "signature": { "type": ["string", "object"] },
+        "parameters": { "type": "array", "items": { "$ref": "#/$defs/parameter" } },
+        "returns": { "type": ["string", "object", "null"] },
+        "description": { "type": "string" },
+        "stability": { "enum": ["experimental", "stable", "deprecated", "internal"] },
+        "implementations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/implementation" }
+        }
+      }
+    }
+  }
+}

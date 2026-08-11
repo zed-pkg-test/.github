@@ -144,12 +144,23 @@ jobs:
         include:
           - id: gleamlang
             paths: gleam,gleamlang
-            image: ghcr.io/gleam-lang/gleam:v1.15.2-erlang-alpine
+            image: ghcr.io/gleam-lang/gleam:v1.15.2-elixir
             command: >-
-              test -f gleam.toml &&
+              if [ -x ./test.sh ]; then ./test.sh; else
+              if [ -f ../../syncer.c/bindings/beam/mix.exs ]; then
+              apt-get update >/dev/null &&
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends build-essential cargo >/dev/null &&
+              (cd ../../syncer.c/bindings/beam &&
+              mix local.hex --force &&
+              mix local.rebar --force &&
+              mix deps.get &&
+              mix compile) &&
+              export OPTO_SYNC_BEAM_EBIN="$(realpath ../../syncer.c/bindings/beam/_build/dev/lib/opto_sync_nif/ebin)" &&
+              export OPTO_SYNC_ELIXIR_EBIN="$(elixir -e 'IO.puts(Path.join(:code.lib_dir(:elixir), "ebin"))')";
+              fi &&
               gleam deps download &&
               gleam check &&
-              gleam test
+              gleam test; fi
           - id: erlang
             paths: erlang
             image: erlang:27
@@ -171,10 +182,18 @@ jobs:
             paths: dart
             image: dart:stable
             command: >-
+              if [ -x ./test.sh ]; then ./test.sh; else
+              if [ -f ../../syncer.c/core/CMakeLists.txt ]; then
+              apt-get update >/dev/null &&
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends build-essential cmake libsqlite3-0 >/dev/null &&
+              cmake -S ../../syncer.c/core -B ../../syncer.c/core/build &&
+              cmake --build ../../syncer.c/core/build --target syncer &&
+              export SYNCER_LIB_PATH="$(realpath ../../syncer.c/core/build/libsyncer.so)";
+              fi &&
               test -f pubspec.yaml &&
               dart pub get &&
               dart analyze &&
-              if [ -d test ]; then dart test; fi
+              if [ -d test ]; then dart test; fi; fi
           - id: rust
             paths: rust
             image: rust:1

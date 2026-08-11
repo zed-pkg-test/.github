@@ -35,6 +35,27 @@ class SdkClientLanguageMatrixTests(unittest.TestCase):
         self.assertIn("          submodules: recursive\n", checkout)
         self.assertIn("          persist-credentials: false\n", checkout)
 
+    def test_dart_builds_the_product_native_core_before_tests(self) -> None:
+        dart = self.matrix_entry("dart")
+        self.assertIn("if [ -x ./test.sh ]; then ./test.sh; else", dart)
+        self.assertIn("../../syncer.c/core/CMakeLists.txt", dart)
+        self.assertIn("cmake --build ../../syncer.c/core/build --target syncer", dart)
+        self.assertIn("export SYNCER_LIB_PATH=", dart)
+        self.assertIn("dart analyze", dart)
+        self.assertIn("dart test", dart)
+
+    def test_gleam_builds_the_product_beam_nif_before_tests(self) -> None:
+        gleam = self.matrix_entry("gleamlang")
+        self.assertIn(
+            "            image: ghcr.io/gleam-lang/gleam:v1.15.2-elixir\n",
+            gleam,
+        )
+        self.assertIn("../../syncer.c/bindings/beam/mix.exs", gleam)
+        self.assertIn("mix compile", gleam)
+        self.assertIn("export OPTO_SYNC_BEAM_EBIN=", gleam)
+        self.assertIn("export OPTO_SYNC_ELIXIR_EBIN=", gleam)
+        self.assertIn("gleam test", gleam)
+
     def test_java_prefers_native_tests_and_keeps_maven_on_jdk17(self) -> None:
         java = self.matrix_entry("java")
         self.assertIn("            image: maven:3.9-eclipse-temurin-17\n", java)

@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "namespace_prefix": "zed-pkg-test",
+  "domain_suffix": "zed-pkg-test.invalid",
+  "service_account_prefix": "zed-pkg-test",
+  "storage_prefix": "test/zed-pkg/",
+  "outbound_send_enabled": false,
+  "outbound_rate_limit_per_minute": 0,
+  "production_connectivity_enabled": false
+}

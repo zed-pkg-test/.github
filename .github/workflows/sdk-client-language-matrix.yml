@@ -255,14 +255,14 @@ jobs:
               npm run build --if-present &&
               npm run test --if-present
           - id: typescript-deno
-            paths: typescript/runtimes/deno,typescript/deno,deno
+            paths: typescript/deno,typescript/runtimes/deno,deno
             image: denoland/deno:2.9.5
             command: >-
               find . \( -name '*.ts' -o -name '*.tsx' \) | grep -q . &&
               find . \( -name '*.ts' -o -name '*.tsx' \) -print0 | xargs -0 deno check &&
               deno test -A
           - id: typescript-bun
-            paths: typescript/runtimes/bun,typescript/bun,bun
+            paths: typescript/bun,typescript/runtimes/bun,bun
             image: oven/bun:1-debian
             command: >-
               test -f package.json &&
@@ -271,7 +271,7 @@ jobs:
               if bun -e "const p=require('./package.json');process.exit(p.scripts?.build?0:1)"; then bun run build; fi &&
               if find . -type f \( -name '*test.ts' -o -name '*.test.ts' -o -name '*spec.ts' \) | grep -q .; then bun test; fi
           - id: typescript-edge
-            paths: typescript/runtimes/edge,typescript/edge,typescript/edge-runtimes,edge
+            paths: typescript/edge,typescript/runtimes/edge,typescript/edge-runtimes,edge
             image: node:22
             command: >-
               test -f package.json &&
@@ -297,7 +297,6 @@ jobs:
               if [ -d Tests ]; then swift test; fi
           - id: zig
             paths: zig
-            image: ziglang/zig:0.14.0
             command: >-
               test -f build.zig &&
               zig build test
@@ -429,6 +428,12 @@ jobs:
           find "_upstream/${CLIENTS_ROOT%/}" -maxdepth 3 -mindepth 1 -type d -print 2>/dev/null | sort >&2 || true
           exit 1
 
+      - name: Set up the pinned Zig toolchain
+        if: ${{ steps.language-selection.outputs.enabled == 'true' && matrix.id == 'zig' }}
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        with:
+          version: 0.14.0
+
       - name: Compile and test the SDK in its native toolchain
         if: ${{ steps.language-selection.outputs.enabled == 'true' }}
         shell: bash
@@ -439,6 +444,12 @@ jobs:
           SDK_ROOT: ${{ steps.sdk-root.outputs.root }}
         run: |
           set -euo pipefail
+          if [[ "$LANGUAGE_ID" == "zig" ]]; then
+            cd "$SDK_ROOT"
+            sh -c "set -eu; $SDK_COMMAND"
+            exit 0
+          fi
+
           runtime_image="$SDK_IMAGE"
           beam_dockerfile="_upstream/syncer.c/bindings/beam/Dockerfile.test"
           if [[ "$LANGUAGE_ID" == "gleamlang" && -f "$beam_dockerfile" ]]; then

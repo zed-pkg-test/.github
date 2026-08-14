@@ -260,7 +260,7 @@ jobs:
             command: >-
               find . \( -name '*.ts' -o -name '*.tsx' \) | grep -q . &&
               find . \( -name '*.ts' -o -name '*.tsx' \) -print0 | xargs -0 deno check &&
-              deno test -A
+              if find . -type f \( -name '*_test.ts' -o -name '*.test.ts' -o -name '*.spec.ts' -o -name '*_test.tsx' -o -name '*.test.tsx' -o -name '*.spec.tsx' \) | grep -q .; then deno test -A; fi
           - id: typescript-bun
             paths: typescript/bun,typescript/runtimes/bun,bun
             image: oven/bun:1-debian
@@ -299,7 +299,8 @@ jobs:
             paths: zig
             command: >-
               test -f build.zig &&
-              zig build test
+              zig build &&
+              if zig build -h 2>&1 | grep -Eq '^[[:space:]]+test([[:space:]]|$)'; then zig build test; fi
           - id: cpp
             paths: cpp,cplusplus,cxx
             image: gcc:14

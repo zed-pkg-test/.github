@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   sdk-clients:
-    uses: zed-pkg-test/.github/.github/workflows/sdk-client-language-matrix.yml@e9505caaa5163eac18d0fffe20ef60cb071c7233
+    uses: zed-pkg-test/.github/.github/workflows/sdk-client-language-matrix.yml@59b6e9ae09988cd19db3c890f87df0ff8d8bbb69
     with:
       clients_repository: zed-pkg/zed-clients
       clients_ref: 3196895c35412ee608750a8db830dbe83ec6a14c

@@ -144,12 +144,21 @@ jobs:
         include:
           - id: gleamlang
             paths: gleam,gleamlang
-            image: ghcr.io/gleam-lang/gleam:v1.15.2-erlang-alpine
+            image: ghcr.io/gleam-lang/gleam:v1.15.2-elixir
             command: >-
-              test -f gleam.toml &&
+              if [ -x ./test.sh ]; then ./test.sh; else
+              if [ -f ../../syncer.c/bindings/beam/mix.exs ]; then
+              (cd ../../syncer.c/bindings/beam &&
+              mix local.hex --force &&
+              mix local.rebar --force &&
+              mix deps.get &&
+              mix compile) &&
+              export OPTO_SYNC_BEAM_EBIN="$(realpath ../../syncer.c/bindings/beam/_build/dev/lib/opto_sync_nif/ebin)" &&
+              export OPTO_SYNC_ELIXIR_EBIN="$(elixir -e 'IO.puts(Path.join(:code.lib_dir(:elixir), "ebin"))')";
+              fi &&
               gleam deps download &&
               gleam check &&
-              gleam test
+              gleam test; fi
           - id: erlang
             paths: erlang
             image: erlang:27
@@ -171,10 +180,18 @@ jobs:
             paths: dart
             image: dart:stable
             command: >-
+              if [ -x ./test.sh ]; then ./test.sh; else
+              if [ -f ../../syncer.c/core/CMakeLists.txt ]; then
+              apt-get update >/dev/null &&
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends build-essential cmake libsqlite3-0 >/dev/null &&
+              cmake -S ../../syncer.c/core -B ../../syncer.c/core/build &&
+              cmake --build ../../syncer.c/core/build --target syncer &&
+              export SYNCER_LIB_PATH="$(realpath ../../syncer.c/core/build/libsyncer.so)";
+              fi &&
               test -f pubspec.yaml &&
               dart pub get &&
               dart analyze &&
-              if [ -d test ]; then dart test; fi
+              if [ -d test ]; then dart test; fi; fi
           - id: rust
             paths: rust
             image: rust:1
@@ -183,12 +200,13 @@ jobs:
               cargo test --workspace --all-targets --all-features
           - id: java
             paths: java
-            image: maven:3.9-eclipse-temurin-21
+            image: maven:3.9-eclipse-temurin-17
             command: >-
-              if [ -x ./mvnw ]; then ./mvnw -B test;
+              if [ -x ./test.sh ]; then ./test.sh;
+              elif [ -x ./mvnw ]; then ./mvnw -B test;
               elif [ -f pom.xml ]; then mvn -B test;
               elif [ -x ./gradlew ]; then ./gradlew --no-daemon test;
-              elif [ -f build.gradle ] || [ -f build.gradle.kts ]; then echo 'Java SDK requires a Gradle wrapper' >&2; exit 1;
+              elif [ -f build.gradle ] || [ -f build.gradle.kts ]; then echo 'Java SDK requires test.sh or a Gradle wrapper' >&2; exit 1;
               else find . -name '*.java' -print0 | xargs -0 -r javac -Werror; fi
           - id: golang
             paths: go,golang
@@ -237,14 +255,14 @@ jobs:
               npm run build --if-present &&
               npm run test --if-present
           - id: typescript-deno
-            paths: typescript/runtimes/deno,typescript/deno,deno
-            image: denoland/deno:2
+            paths: typescript/deno,typescript/runtimes/deno,deno
+            image: denoland/deno:2.9.5
             command: >-
               find . \( -name '*.ts' -o -name '*.tsx' \) | grep -q . &&
               find . \( -name '*.ts' -o -name '*.tsx' \) -print0 | xargs -0 deno check &&
-              deno test -A
+              if find . -type f \( -name '*_test.ts' -o -name '*.test.ts' -o -name '*.spec.ts' -o -name '*_test.tsx' -o -name '*.test.tsx' -o -name '*.spec.tsx' \) | grep -q .; then deno test -A; fi
           - id: typescript-bun
-            paths: typescript/runtimes/bun,typescript/bun,bun
+            paths: typescript/bun,typescript/runtimes/bun,bun
             image: oven/bun:1-debian
             command: >-
               test -f package.json &&
@@ -253,7 +271,7 @@ jobs:
               if bun -e "const p=require('./package.json');process.exit(p.scripts?.build?0:1)"; then bun run build; fi &&
               if find . -type f \( -name '*test.ts' -o -name '*.test.ts' -o -name '*spec.ts' \) | grep -q .; then bun test; fi
           - id: typescript-edge
-            paths: typescript/runtimes/edge,typescript/edge,typescript/edge-runtimes,edge
+            paths: typescript/edge,typescript/runtimes/edge,typescript/edge-runtimes,edge
             image: node:22
             command: >-
               test -f package.json &&
@@ -279,10 +297,10 @@ jobs:
               if [ -d Tests ]; then swift test; fi
           - id: zig
             paths: zig
-            image: ziglang/zig:0.14.0
             command: >-
               test -f build.zig &&
-              zig build test
+              zig build &&
+              if zig build -h 2>&1 | grep -Eq '^[[:space:]]+test([[:space:]]|$)'; then zig build test; fi
           - id: cpp
             paths: cpp,cplusplus,cxx
             image: gcc:14
@@ -343,6 +361,7 @@ jobs:
           token: ${{ secrets.read_token != '' && secrets.read_token || github.token }}
           persist-credentials: false
           show-progress: false
+          submodules: recursive
 
       - name: Check out the interfaces dependency
         if: ${{ inputs.interfaces_repository != '' }}
@@ -410,19 +429,51 @@ jobs:
           find "_upstream/${CLIENTS_ROOT%/}" -maxdepth 3 -mindepth 1 -type d -print 2>/dev/null | sort >&2 || true
           exit 1
 
+      - name: Set up the pinned Zig toolchain
+        if: ${{ steps.language-selection.outputs.enabled == 'true' && matrix.id == 'zig' }}
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        with:
+          version: 0.14.0
+
       - name: Compile and test the SDK in its native toolchain
         if: ${{ steps.language-selection.outputs.enabled == 'true' }}
         shell: bash
         env:
+          LANGUAGE_ID: ${{ matrix.id }}
           SDK_IMAGE: ${{ matrix.image }}
           SDK_COMMAND: ${{ matrix.command }}
           SDK_ROOT: ${{ steps.sdk-root.outputs.root }}
         run: |
           set -euo pipefail
-          docker pull "$SDK_IMAGE"
+          if [[ "$LANGUAGE_ID" == "zig" ]]; then
+            cd "$SDK_ROOT"
+            sh -c "set -eu; $SDK_COMMAND"
+            exit 0
+          fi
+
+          runtime_image="$SDK_IMAGE"
+          beam_dockerfile="_upstream/syncer.c/bindings/beam/Dockerfile.test"
+          if [[ "$LANGUAGE_ID" == "gleamlang" && -f "$beam_dockerfile" ]]; then
+            case "$(uname -m)" in
+              x86_64) target_arch="amd64" ;;
+              aarch64|arm64) target_arch="arm64" ;;
+              *)
+                echo "Unsupported runner architecture for the BEAM test image: $(uname -m)" >&2
+                exit 1
+                ;;
+            esac
+            runtime_image="opto-sync-beam-test:local"
+            docker build \
+              --build-arg "TARGETARCH=$target_arch" \
+              --file "$beam_dockerfile" \
+              --tag "$runtime_image" \
+              "$(dirname "$beam_dockerfile")"
+          else
+            docker pull "$runtime_image"
+          fi
           docker run --rm \
             --entrypoint sh \
             --volume "$GITHUB_WORKSPACE:/workspace" \
             --workdir "/workspace/$SDK_ROOT" \
-            "$SDK_IMAGE" \
+            "$runtime_image" \
             -c "set -eu; $SDK_COMMAND"

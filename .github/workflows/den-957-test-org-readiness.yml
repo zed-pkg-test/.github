@@ -17,8 +17,13 @@ on:
 permissions:
   contents: read
 
+env:
+  SCHEDULE_TIMEZONE: Etc/UTC
+  RUN_EVIDENCE_SCHEMA: zed-pkg-test.scheduled-run-evidence.v1
+  MISSED_RUN_POLICY: fail-closed-no-valid-evidence-means-missed
+
 concurrency:
-  group: den-957-test-org-readiness-${{ github.event.pull_request.number || github.ref }}
+  group: den-957-test-org-readiness-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

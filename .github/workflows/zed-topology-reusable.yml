@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: zed-topology-reusable-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   topology:
     runs-on: ubuntu-latest

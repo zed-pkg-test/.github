@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: den-2839-cache-poll-guard-${{ github.event.pull_request.number || github.ref }}
+  group: den-2839-cache-poll-guard-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -21,13 +21,14 @@ jobs:
       SOURCE_REPOSITORY: ORESoftware/k8s-libs-and-shared-defs
       SOURCE_SHA: 2498e7f6937b9d495dfae1bcfe15ff409bd5863d
     steps:
-      - name: Check out exact public source candidate
+      - name: Check out exact private source candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: ${{ env.SOURCE_REPOSITORY }}
           ref: ${{ env.SOURCE_SHA }}
           path: candidate
           fetch-depth: 1
+          token: ${{ secrets.TEST_ORG_READ_TOKEN || github.token }}
           persist-credentials: false
           show-progress: false
 

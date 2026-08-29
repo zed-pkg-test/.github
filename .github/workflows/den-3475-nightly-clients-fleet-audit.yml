@@ -1,4 +1,4 @@
-name: DEN-3475 clients fleet audit canary
+name: DEN-3475 clients fleet conformance canary
 
 # Scheduled ownership belongs to
 # zed-pkg/.github/.github/workflows/nightly-clients-fleet-hardening.yml.
@@ -34,14 +34,13 @@ permissions:
   contents: read
 
 env:
-  SCHEDULE_TIMEZONE: America/Chicago
+  CANONICAL_NIGHTLY_CONTROLLER: zed-pkg/.github/.github/workflows/nightly-clients-fleet-hardening.yml
   RUN_EVIDENCE_SCHEMA: zed-pkg-test.clients-fleet-audit.v1
-  MISSED_RUN_POLICY: fail-closed-no-valid-evidence-means-missed
   REUSABLE_WORKFLOW_REF: 9b8b69c47c6a3704a33707d9162cd27cdf92c7d7
   LINEAR_ISSUE: DEN-3475
 
 concurrency:
-  group: den-3475-clients-fleet-${{ github.workflow }}-${{ github.ref }}
+  group: den-3475-clients-conformance-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:

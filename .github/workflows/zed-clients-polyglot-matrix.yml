@@ -13,17 +13,260 @@ on:
 permissions:
   contents: read
 
+env:
+  SCHEDULE_TIMEZONE: Etc/UTC
+  RUN_EVIDENCE_SCHEMA: zed-pkg-test.scheduled-run-evidence.v1
+  MISSED_RUN_POLICY: fail-closed-no-valid-evidence-means-missed
+  ZED_CLIENTS_CANDIDATE_SHA: 3196895c35412ee608750a8db830dbe83ec6a14c
+  ZED_CLIENTS_NATIVE_BASELINE_SHA: a6d15915af44ac675ccba1459f7f55e0bba421a2
+
+concurrency:
+  group: zed-clients-polyglot-matrix-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   sdk-clients:
     uses: zed-pkg-test/.github/.github/workflows/sdk-client-language-matrix.yml@59b6e9ae09988cd19db3c890f87df0ff8d8bbb69
     with:
       clients_repository: zed-pkg/zed-clients
-      clients_ref: main
+      clients_ref: 3196895c35412ee608750a8db830dbe83ec6a14c
       clients_root: clients
+      # These languages are validated below with exact native build contracts.
+      disabled_languages: kotlin,typescript-deno,cpp,zig
       interfaces_repository: zed-pkg/zed-interfaces
       interfaces_ref: main
       interfaces_path: zed-interfaces
       interfaces_dependency: zed-pkg/zed-interfaces
-      disabled_languages: kotlin,zig
     secrets:
       read_token: ${{ secrets.TEST_ORG_READ_TOKEN }}
+
+  cpp-native:
+    name: C++20 native consumer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact C++/Zig baseline candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: zed-pkg/zed-clients
+          ref: ${{ env.ZED_CLIENTS_NATIVE_BASELINE_SHA }}
+          path: zed-clients-native
+          token: ${{ secrets.TEST_ORG_READ_TOKEN || github.token }}
+          persist-credentials: false
+          show-progress: false
+
+      - name: Verify exact candidate and C++ contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C zed-clients-native rev-parse HEAD)" = "$ZED_CLIENTS_NATIVE_BASELINE_SHA"
+          test -f zed-clients-native/clients/cpp/CMakeLists.txt
+          test -f zed-clients-native/clients/cpp/include/zed_pkg/client.hpp
+          test -f zed-clients-native/clients/cpp/tests/client_test.cpp
+          command -v cmake >/dev/null
+          command -v c++ >/dev/null
+
+      - name: Configure, compile, and test C++ with warnings as errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          build_dir="$RUNNER_TEMP/zed-clients-cpp-build"
+          cmake \
+            -S zed-clients-native/clients/cpp \
+            -B "$build_dir" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DZED_PKG_BUILD_TESTS=ON
+          cmake --build "$build_dir" --parallel 2
+          ctest --test-dir "$build_dir" --output-on-failure
+
+      - name: Record exact-head C++ evidence
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/cpp-native
+          printf 'repository=zed-pkg/zed-clients\nrequested_sha=%s\nactual_sha=%s\nbuild_contract=clients/cpp/CMakeLists.txt\n' \
+            "$ZED_CLIENTS_NATIVE_BASELINE_SHA" \
+            "$(git -C zed-clients-native rev-parse HEAD)" \
+            > artifacts/cpp-native/source.txt
+          cmake --version > artifacts/cpp-native/cmake-version.txt
+          c++ --version > artifacts/cpp-native/compiler-version.txt
+
+      - name: Publish C++ exact-head evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zed-clients-cpp-native-${{ env.ZED_CLIENTS_NATIVE_BASELINE_SHA }}
+          path: artifacts/cpp-native/
+          if-no-files-found: error
+          retention-days: 30
+
+  deno-native:
+    name: Deno native consumer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact zed-clients candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: zed-pkg/zed-clients
+          ref: ${{ env.ZED_CLIENTS_CANDIDATE_SHA }}
+          path: zed-clients
+          token: ${{ secrets.TEST_ORG_READ_TOKEN || github.token }}
+          persist-credentials: false
+          show-progress: false
+
+      - name: Install exact Deno toolchain
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2.0.5
+        with:
+          deno-version: v2.9.5
+          cache: false
+
+      - name: Verify exact candidate and Deno contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C zed-clients rev-parse HEAD)" = "$ZED_CLIENTS_CANDIDATE_SHA"
+          test -f zed-clients/clients/typescript/deno/deno.json
+          test -f zed-clients/clients/typescript/deno/mod.ts
+          test -f zed-clients/clients/typescript/deno/mod_test.ts
+
+      - name: Check and test the Deno SDK
+        working-directory: zed-clients/clients/typescript/deno
+        shell: bash
+        run: |
+          set -euo pipefail
+          deno --version
+          deno check mod.ts mod_test.ts
+          deno test -A
+
+      - name: Record exact-head Deno evidence
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/deno-native
+          printf 'repository=zed-pkg/zed-clients\nrequested_sha=%s\nactual_sha=%s\nbuild_contract=clients/typescript/deno/deno.json\n' \
+            "$ZED_CLIENTS_CANDIDATE_SHA" \
+            "$(git -C zed-clients rev-parse HEAD)" \
+            > artifacts/deno-native/source.txt
+          deno --version > artifacts/deno-native/deno-version.txt
+
+      - name: Publish Deno exact-head evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zed-clients-deno-native-${{ env.ZED_CLIENTS_CANDIDATE_SHA }}
+          path: artifacts/deno-native/
+          if-no-files-found: error
+          retention-days: 30
+
+  kotlin-maven:
+    name: Kotlin Maven consumer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact zed-clients candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: zed-pkg/zed-clients
+          ref: ${{ env.ZED_CLIENTS_CANDIDATE_SHA }}
+          path: zed-clients
+          token: ${{ secrets.TEST_ORG_READ_TOKEN || github.token }}
+          persist-credentials: false
+          show-progress: false
+
+      - name: Verify exact candidate and Maven contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C zed-clients rev-parse HEAD)" = "$ZED_CLIENTS_CANDIDATE_SHA"
+          test -f zed-clients/clients/kotlin/pom.xml
+          command -v mvn >/dev/null
+
+      - name: Build and test the Kotlin SDK with its native toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn --version
+          mvn -B -f zed-clients/clients/kotlin/pom.xml test
+
+      - name: Record exact-head Kotlin evidence
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/kotlin-maven
+          printf 'repository=zed-pkg/zed-clients\nrequested_sha=%s\nactual_sha=%s\nbuild_contract=clients/kotlin/pom.xml\n' \
+            "$ZED_CLIENTS_CANDIDATE_SHA" \
+            "$(git -C zed-clients rev-parse HEAD)" \
+            > artifacts/kotlin-maven/source.txt
+          mvn --version > artifacts/kotlin-maven/maven-version.txt
+
+      - name: Publish Kotlin exact-head evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zed-clients-kotlin-maven-${{ env.ZED_CLIENTS_CANDIDATE_SHA }}
+          path: artifacts/kotlin-maven/
+          if-no-files-found: error
+          retention-days: 30
+
+  zig-native:
+    name: Zig 0.15 native consumer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact C++/Zig baseline candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: zed-pkg/zed-clients
+          ref: ${{ env.ZED_CLIENTS_NATIVE_BASELINE_SHA }}
+          path: zed-clients-native
+          token: ${{ secrets.TEST_ORG_READ_TOKEN || github.token }}
+          persist-credentials: false
+          show-progress: false
+
+      - name: Install exact Zig toolchain
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2.2.1
+        with:
+          version: 0.15.2
+          use-cache: false
+
+      - name: Verify exact candidate and Zig contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C zed-clients-native rev-parse HEAD)" = "$ZED_CLIENTS_NATIVE_BASELINE_SHA"
+          test -f zed-clients-native/clients/zig/build.zig
+          test -f zed-clients-native/clients/zig/src/client.zig
+
+      - name: Format and test the Zig SDK
+        working-directory: zed-clients-native/clients/zig
+        shell: bash
+        run: |
+          set -euo pipefail
+          zig version
+          zig fmt --check build.zig src/client.zig
+          zig build test
+
+      - name: Record exact-head Zig evidence
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/zig-native
+          printf 'repository=zed-pkg/zed-clients\nrequested_sha=%s\nactual_sha=%s\nbuild_contract=clients/zig/build.zig\n' \
+            "$ZED_CLIENTS_NATIVE_BASELINE_SHA" \
+            "$(git -C zed-clients-native rev-parse HEAD)" \
+            > artifacts/zig-native/source.txt
+          zig version > artifacts/zig-native/zig-version.txt
+
+      - name: Publish Zig exact-head evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: zed-clients-zig-native-${{ env.ZED_CLIENTS_NATIVE_BASELINE_SHA }}
+          path: artifacts/zig-native/
+          if-no-files-found: error
+          retention-days: 30

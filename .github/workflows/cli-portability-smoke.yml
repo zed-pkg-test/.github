@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: cli-portability-smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   rust-cli:
     uses: ORESoftware/.github/.github/workflows/reusable-cli-portability.yml@a44a422bd2e5a26126488c4dbffb17ed320ae957

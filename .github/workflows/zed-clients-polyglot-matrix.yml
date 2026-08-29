@@ -37,7 +37,6 @@ jobs:
       interfaces_ref: main
       interfaces_path: zed-interfaces
       interfaces_dependency: zed-pkg/zed-interfaces
-      disabled_languages: kotlin,zig
     secrets:
       read_token: ${{ secrets.TEST_ORG_READ_TOKEN }}
 

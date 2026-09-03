@@ -8,11 +8,11 @@
     "portable-node-cli": "./cli.js"
   },
   "scripts": {
-    "format:check": "node --check cli.js && node --check test/cli.test.js",
-    "lint": "node --check cli.js && node --check test/cli.test.js",
+    "format:check": "node --check cli.js && node --check test/cli.test.js && node --check scripts/run-ores-lint.cjs",
+    "lint": "node --check cli.js && node --check test/cli.test.js && node --check scripts/run-ores-lint.cjs",
     "test": "node --test",
     "build": "node -e \"require('node:fs').accessSync('cli.js')\"",
-    "lint:ores": "if [ -f ../../.ores-lint/lint.sh ]; then sh ../../.ores-lint/lint.sh; else echo 'ores-lint not installed'; fi",
+    "lint:ores": "node scripts/run-ores-lint.cjs",
     "prepublishOnly": "npm run lint:ores",
     "prebuild": "npm run lint:ores"
   },

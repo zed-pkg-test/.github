@@ -17,7 +17,7 @@ env:
   SCHEDULE_TIMEZONE: Etc/UTC
   RUN_EVIDENCE_SCHEMA: zed-pkg-test.scheduled-run-evidence.v1
   MISSED_RUN_POLICY: fail-closed-no-valid-evidence-means-missed
-  ZED_CLIENTS_CANDIDATE_SHA: 3196895c35412ee608750a8db830dbe83ec6a14c
+  ZED_CLIENTS_CANDIDATE_SHA: 5a9e35e0cf04e409dbc0962255256583c6c7565d
   ZED_CLIENTS_NATIVE_BASELINE_SHA: a6d15915af44ac675ccba1459f7f55e0bba421a2
 
 concurrency:
@@ -29,7 +29,7 @@ jobs:
     uses: zed-pkg-test/.github/.github/workflows/sdk-client-language-matrix.yml@59b6e9ae09988cd19db3c890f87df0ff8d8bbb69
     with:
       clients_repository: zed-pkg/zed-clients
-      clients_ref: 3196895c35412ee608750a8db830dbe83ec6a14c
+      clients_ref: 5a9e35e0cf04e409dbc0962255256583c6c7565d
       clients_root: clients
       # These languages are validated below with exact native build contracts.
       disabled_languages: kotlin,typescript-deno,cpp,zig

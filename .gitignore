@@ -5,3 +5,7 @@ temp/worktrees
 fixtures/rust-cli/target/
 fixtures/node-cli/node_modules/
 __pycache__/
+
+# Sanctioned scratch locations - AGENTS.md requires both, trailing-slash form
+tmp/
+temp/

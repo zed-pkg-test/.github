@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/zed-pkg-test/.github/raw/main/schemas/test-counterpart-identity.schema.json",
+  "title": "ORE test-organization production counterpart identity",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "status", "testOwner", "productionOwner", "discoveryScope", "relationshipRegistry", "policy"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "status": {"enum": ["active", "unconfigured", "disabled"]},
+    "testOwner": {"$ref": "#/$defs/githubOwner"},
+    "productionOwner": {
+      "oneOf": [
+        {"$ref": "#/$defs/githubOwner"},
+        {"type": "null"}
+      ]
+    },
+    "discoveryScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {"enum": ["organization-current-tips", "explicit-repositories"]},
+        "repositories": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"}
+        }
+      }
+    },
+    "relationshipRegistry": {"type": "string", "minLength": 1},
+    "evidenceAnchors": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["suffixInferenceAuthoritative", "bindExactDefaultBranchSha", "failClosedOnInvisiblePrivateSources", "silentPublicFallbackAllowed"],
+      "properties": {
+        "suffixInferenceAuthoritative": {"const": false},
+        "bindExactDefaultBranchSha": {"const": true},
+        "failClosedOnInvisiblePrivateSources": {"const": true},
+        "silentPublicFallbackAllowed": {"const": false}
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "active"}}},
+      "then": {"properties": {"productionOwner": {"$ref": "#/$defs/githubOwner"}}}
+    },
+    {
+      "if": {"properties": {"status": {"const": "unconfigured"}}},
+      "then": {"properties": {"productionOwner": {"type": "null"}}}
+    },
+    {
+      "if": {"properties": {"discoveryScope": {"properties": {"kind": {"const": "explicit-repositories"}}}}},
+      "then": {"properties": {"discoveryScope": {"required": ["kind", "repositories"], "properties": {"repositories": {"minItems": 1}}}}}
+    }
+  ],
+  "$defs": {
+    "githubOwner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["login", "id", "type"],
+      "properties": {
+        "login": {"type": "string", "pattern": "^[A-Za-z0-9-]+$", "minLength": 1, "maxLength": 39},
+        "id": {"type": "integer", "minimum": 1},
+        "type": {"enum": ["Organization", "User"]}
+      }
+    }
+  }
+}

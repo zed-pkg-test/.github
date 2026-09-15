@@ -1,0 +1,22 @@
+name: counterpart identity contract self-test
+on:
+  pull_request:
+    paths:
+      - 'schemas/test-counterpart-identity.schema.json'
+      - '.github/workflows/reusable-test-counterpart-identity.yml'
+      - '.github/workflows/test-counterpart-contract-selftest.yml'
+      - 'architecture/test-counterpart.json'
+  push:
+    branches: [main]
+    paths:
+      - 'schemas/test-counterpart-identity.schema.json'
+      - '.github/workflows/reusable-test-counterpart-identity.yml'
+      - '.github/workflows/test-counterpart-contract-selftest.yml'
+      - 'architecture/test-counterpart.json'
+  workflow_dispatch: {}
+permissions: {contents: read}
+jobs:
+  validate-current-mapping:
+    uses: ./.github/workflows/reusable-test-counterpart-identity.yml
+    with:
+      mapping_path: architecture/test-counterpart.json

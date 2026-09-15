@@ -1,0 +1,95 @@
+name: reusable explicit counterpart current tips
+on:
+  workflow_call:
+    inputs:
+      test_owner:
+        required: true
+        type: string
+      test_owner_id:
+        required: true
+        type: string
+      production_owner:
+        required: true
+        type: string
+      production_owner_id:
+        required: true
+        type: string
+      governance_repository:
+        required: true
+        type: string
+      governance_path:
+        required: false
+        type: string
+        default: architecture/test-counterpart.json
+    secrets:
+      read_token:
+        required: false
+permissions:
+  contents: read
+jobs:
+  current-production-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ secrets.read_token || github.token }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Bind caller head and stable counterpart identity
+        id: identity
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          TEST_OWNER: ${{ inputs.test_owner }}
+          TEST_OWNER_ID: ${{ inputs.test_owner_id }}
+          PRODUCTION_OWNER: ${{ inputs.production_owner }}
+          PRODUCTION_OWNER_ID: ${{ inputs.production_owner_id }}
+          GOVERNANCE_REPOSITORY: ${{ inputs.governance_repository }}
+          GOVERNANCE_PATH: ${{ inputs.governance_path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test "$TEST_OWNER" = "$GITHUB_REPOSITORY_OWNER"
+          test "$(gh api "/orgs/$TEST_OWNER" --jq .id)" = "$TEST_OWNER_ID"
+          test "$(gh api "/orgs/$PRODUCTION_OWNER" --jq .id)" = "$PRODUCTION_OWNER_ID"
+          g_sha="$(gh api "/repos/$GOVERNANCE_REPOSITORY/commits/main" --jq .sha)"
+          gh api "/repos/$GOVERNANCE_REPOSITORY/contents/$GOVERNANCE_PATH?ref=$g_sha" --jq .content | tr -d '\n' | base64 --decode >/tmp/governance.json
+          test "$(jq -r '.status' /tmp/governance.json)" = active
+          test "$(jq -r '.testOwner.login' /tmp/governance.json)" = "$TEST_OWNER"
+          test "$(jq -r '.testOwner.id' /tmp/governance.json)" = "$TEST_OWNER_ID"
+          test "$(jq -r '.productionOwner.login' /tmp/governance.json)" = "$PRODUCTION_OWNER"
+          test "$(jq -r '.productionOwner.id' /tmp/governance.json)" = "$PRODUCTION_OWNER_ID"
+          test "$(jq -r '.policy.suffixInferenceAuthoritative' /tmp/governance.json)" = false
+          test "$(jq -r '.policy.bindExactDefaultBranchSha' /tmp/governance.json)" = true
+          printf 'governance_sha=%s\n' "$g_sha" >> "$GITHUB_OUTPUT"
+      - name: Bind every admitted production repository tip
+        env:
+          PRODUCTION_OWNER: ${{ inputs.production_owner }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api --paginate "/orgs/$PRODUCTION_OWNER/repos?type=all&per_page=100" --jq '.[]|select(.archived|not)|[.name,.default_branch]|@tsv' >/tmp/repos
+          test -s /tmp/repos
+          scanned=0; authority=0
+          while IFS=$'\t' read -r repo branch; do
+            sha="$(gh api "/repos/$PRODUCTION_OWNER/$repo/commits/$branch" --jq .sha)"
+            [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
+            scanned=$((scanned+1)); marker=0
+            for root in .zpkg.toml .ores-infra.toml Cargo.toml package.json pyproject.toml go.mod pubspec.yaml; do
+              gh api "/repos/$PRODUCTION_OWNER/$repo/contents/$root?ref=$sha" >/dev/null 2>&1 && { marker=1; break; }
+            done
+            paths="$(gh api "/repos/$PRODUCTION_OWNER/$repo/git/trees/$sha?recursive=1" --jq '.tree[]?.path' 2>/dev/null || true)"
+            if ((marker==1)) || grep -Eiq '(\.tsp$|\.proto$|\.wit$|(^|/)openapi[^/]*\.(json|ya?ml)$|(^|/)[^/]*schema[^/]*\.json$)' <<<"$paths"; then authority=1; fi
+          done </tmp/repos
+          ((scanned > 0 && authority == 1))
+      - name: Require Zed dependency tip reachability
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="$(gh api repos/zed-pkg/zed-cli --jq .default_branch)"
+          sha="$(gh api "repos/zed-pkg/zed-cli/commits/$branch" --jq .sha)"
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
+      - name: Record governance evidence
+        run: echo "governance_sha=${{ steps.identity.outputs.governance_sha }}" >> "$GITHUB_STEP_SUMMARY"

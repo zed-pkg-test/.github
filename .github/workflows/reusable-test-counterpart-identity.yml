@@ -1,0 +1,78 @@
+name: reusable test counterpart identity
+on:
+  workflow_call:
+    inputs:
+      mapping_path:
+        description: Path to the test counterpart identity JSON in the caller repository
+        required: false
+        type: string
+        default: architecture/test-counterpart.json
+permissions:
+  contents: read
+jobs:
+  validate-counterpart-identity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact caller head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Validate contract shape and safety invariants
+        env:
+          MAPPING_PATH: ${{ inputs.mapping_path }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          python3 - <<'PY'
+          import json, os, re
+          from pathlib import Path
+
+          p = Path(os.environ['MAPPING_PATH'])
+          d = json.loads(p.read_text())
+          assert d['schemaVersion'] == 1
+          assert d['status'] in {'active', 'unconfigured', 'disabled'}
+          assert isinstance(d['testOwner'], dict)
+          for owner in [d['testOwner']] + ([d['productionOwner']] if d.get('productionOwner') else []):
+              assert re.fullmatch(r'[A-Za-z0-9-]{1,39}', owner['login'])
+              assert isinstance(owner['id'], int) and owner['id'] > 0
+              assert owner['type'] in {'Organization', 'User'}
+          if d['status'] == 'active':
+              assert isinstance(d.get('productionOwner'), dict)
+          if d['status'] == 'unconfigured':
+              assert d.get('productionOwner') is None
+          scope = d['discoveryScope']
+          assert scope['kind'] in {'organization-current-tips', 'explicit-repositories'}
+          if scope['kind'] == 'explicit-repositories':
+              repos = scope.get('repositories')
+              assert isinstance(repos, list) and repos and len(repos) == len(set(repos))
+              assert all(re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', x) for x in repos)
+          policy = d['policy']
+          assert policy['suffixInferenceAuthoritative'] is False
+          assert policy['bindExactDefaultBranchSha'] is True
+          assert policy['failClosedOnInvisiblePrivateSources'] is True
+          assert policy['silentPublicFallbackAllowed'] is False
+          assert isinstance(d['relationshipRegistry'], str) and d['relationshipRegistry']
+          PY
+      - name: Verify stable GitHub owner identities
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MAPPING_PATH: ${{ inputs.mapping_path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          owner_id() {
+            local login="$1" type="$2"
+            if [[ "$type" == Organization ]]; then gh api "/orgs/$login" --jq .id; else gh api "/users/$login" --jq .id; fi
+          }
+          t_login="$(jq -r '.testOwner.login' "$MAPPING_PATH")"; t_type="$(jq -r '.testOwner.type' "$MAPPING_PATH")"; t_id="$(jq -r '.testOwner.id' "$MAPPING_PATH")"
+          test "$(owner_id "$t_login" "$t_type")" = "$t_id"
+          status="$(jq -r '.status' "$MAPPING_PATH")"
+          if [[ "$status" == active ]]; then
+            p_login="$(jq -r '.productionOwner.login' "$MAPPING_PATH")"; p_type="$(jq -r '.productionOwner.type' "$MAPPING_PATH")"; p_id="$(jq -r '.productionOwner.id' "$MAPPING_PATH")"
+            test "$(owner_id "$p_login" "$p_type")" = "$p_id"
+          fi

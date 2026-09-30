@@ -16,7 +16,7 @@ jobs:
   typescript:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: ${{ env.SUBJECT_REPOSITORY }}
           ref: ${{ env.SUBJECT_SHA }}
@@ -39,7 +39,7 @@ jobs:
   go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: ${{ env.SUBJECT_REPOSITORY }}
           ref: ${{ env.SUBJECT_SHA }}
@@ -57,7 +57,7 @@ jobs:
   rust:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: ${{ env.SUBJECT_REPOSITORY }}
           ref: ${{ env.SUBJECT_SHA }}
@@ -72,7 +72,7 @@ jobs:
   gleam:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           repository: ${{ env.SUBJECT_REPOSITORY }}
           ref: ${{ env.SUBJECT_SHA }}

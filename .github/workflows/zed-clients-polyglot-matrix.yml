@@ -94,7 +94,7 @@ jobs:
 
       - name: Publish C++ exact-head evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: zed-clients-cpp-native-${{ env.ZED_CLIENTS_NATIVE_BASELINE_SHA }}
           path: artifacts/cpp-native/
@@ -154,7 +154,7 @@ jobs:
 
       - name: Publish Deno exact-head evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: zed-clients-deno-native-${{ env.ZED_CLIENTS_CANDIDATE_SHA }}
           path: artifacts/deno-native/
@@ -205,7 +205,7 @@ jobs:
 
       - name: Publish Kotlin exact-head evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: zed-clients-kotlin-maven-${{ env.ZED_CLIENTS_CANDIDATE_SHA }}
           path: artifacts/kotlin-maven/
@@ -264,7 +264,7 @@ jobs:
 
       - name: Publish Zig exact-head evidence
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: zed-clients-zig-native-${{ env.ZED_CLIENTS_NATIVE_BASELINE_SHA }}
           path: artifacts/zig-native/

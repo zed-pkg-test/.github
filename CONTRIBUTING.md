@@ -62,3 +62,16 @@ External GitHub Actions must be pinned to full commit SHAs. Workflows must use e
 # Contributing
 
 Keep source dependencies pinned to immutable 40-character commits. Exercise at least one real dependency lane (submodule, Zed, or native package) and preserve the generated contract. Add product assertions rather than replacing contract checks with no-op smoke tests.
+
+## Rust-first scripts and automation
+
+**Use Rust, not Python, for new first-party scripts.** This includes CI/build/test helpers, code generation, infrastructure/deploy/release automation, migrations, repository administration, security audits, and one-off tooling. Prefer maintained Rust executables or `cargo xtask` tasks, with thin shell/YAML wrappers when necessary.
+
+**Migrate existing Python scripts without breaking behavior.** Track their invocation sites and security assumptions. Preserve arguments, exit codes, output contracts, errors, supported platforms, and required negative/positive cases; verify the replacement Rust CLI and affected end-to-end workflows before deleting Python or changing callers. Existing scripts are migration debt, not authorization to write more.
+
+**Python application code may be approved in special cases** with explicit ownership, scope, justification and review. Application-specific tests may follow the approved app, but CI helpers, code generators, migration scripts and repo maintenance are not applications for this purpose.
+
+Provide reproducible `cargo` commands, and run appropriate `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test` and real smoke checks against the PR head. Do not confuse parse-only execution or runner capacity with successful source-level tests, and never claim tests ran without evidence.
+
+The canonical `.github` guidance is a contributor policy; GitHub does not automatically apply custom `AGENTS.md` files or arbitrary CI checks across sibling repositories. Propagate agent guidance and enforcement explicitly, preserving local stricter rules.
+

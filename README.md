@@ -1,4 +1,6 @@
 # .github
+
+**Scripting policy:** [Rust is required for scripts](CONTRIBUTING.md#rust-first-scripts-and-automation); Python application-code exceptions require explicit documentation.
 Governance and reusable test workflow policy for zed-pkg-test.
 
 <!-- ore-org-baseline:begin -->
